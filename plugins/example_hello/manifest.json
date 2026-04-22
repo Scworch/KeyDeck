@@ -1,0 +1,7 @@
+{
+  "id": "example_hello",
+  "name": "Example Hello",
+  "version": "0.1.0",
+  "entry": "plugin.py",
+  "settings": "settings.json"
+}

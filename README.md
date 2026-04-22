@@ -34,7 +34,6 @@ python -m venv .venv
 2. Install dependencies:
 
 ```powershell
-$env:PYTHONUTF8='1'  # helpful on Windows when project path has Cyrillic chars
 python -m pip install -r requirements.txt
 ```
 

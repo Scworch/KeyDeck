@@ -1,0 +1,7 @@
+{
+  "id": "SteamLauncher",
+  "name": "Steam Launcher",
+  "version": "0.1.0",
+  "entry": "plugin.py",
+  "settings": "settings.json"
+}

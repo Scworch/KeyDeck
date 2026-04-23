@@ -1,57 +1,53 @@
 # KeyDeck
 
-Python skeleton for a StreamDeck-like desktop app with:
-- tray icon launcher
-- mini deck window in screen corner
-- configurable button grid
-- squircle-like buttons with labels
-- top-right settings button
-- plugin folders as standalone components
+KeyDeck is a Python desktop app inspired by Stream Deck:
+- tray application with a compact deck window
+- configurable grid and per-slot action mapping in `CFG`
+- squircle buttons with labels and plugin-provided icons
+- plugin system (folder-per-plugin) with per-plugin settings
 
-## Project Layout
+## Requirements
 
-```text
-KeyDeck/
-  keydeck/                  # app package
-    ui/                     # Qt UI widgets
-  plugins/                  # plugin components (folder-per-plugin)
-    example_hello/
-  icons/                    # tray/app icons
-  config/                   # runtime config
-  run_keydeck.cmd           # launch through .venv
-  create_shortcut.ps1       # recreate KeyDeck.lnk shortcut
-```
+- Windows
+- Python 3.11+
 
 ## Quick Start
-
-1. Create and activate venv:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-2. Install dependencies:
-
-```powershell
 python -m pip install -r requirements.txt
-```
-
-3. Run:
-
-```powershell
 python -m keydeck
 ```
 
-Or use:
+## Project Structure
 
-```powershell
-.\run_keydeck.cmd
+```text
+keydeck/                      Core application package
+plugins/                      Plugins (one folder per plugin)
+  example_hello/
+  Steam_Switcher/
+  SteamLauncher/
+  ResolutionSwitcher/
+config/                       App runtime config
+icons/                        Optional tray icon assets
 ```
 
-## Plugins
+## Plugin Basics
 
-Each plugin is a separate folder in `plugins/` and should contain `plugin.py`.
-The loader expects a `Plugin` class with an `actions()` method.
-Script-based plugins are also supported through `manifest.json` (`entry` file is executed on click).
-Each plugin can define its own settings JSON via manifest field `settings`.
+Each plugin lives in `plugins/<plugin_name>/` and typically includes:
+- `manifest.json`
+- `plugin.py`
+- optional local `settings.json` (ignored in git)
+
+Action binding is configured in `CFG`:
+- choose action per slot
+- open plugin settings from the slot editor
+
+## Privacy / Local Data
+
+The repository ignores local plugin state by default:
+- `plugins/*/settings.json`
+- `plugins/*/cache/`
+
+This prevents personal data (for example Steam accounts and local caches) from being committed.

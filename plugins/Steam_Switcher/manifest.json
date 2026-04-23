@@ -2,6 +2,6 @@
   "id": "SteamSwitcher",
   "name": "SteamSwitcher",
   "version": "0.1.0",
-  "entry": "steam_switch.py",
+  "entry": "plugin.py",
   "settings": "steam_switch_settings.json"
 }

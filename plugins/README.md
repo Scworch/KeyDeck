@@ -26,3 +26,7 @@ Manifest fields:
 - `args` optional list of script args; placeholders:
   - `{settings_file}`
   - `{plugin_dir}`
+
+CFG integration:
+- In KeyDeck CFG window you can bind each slot to a specific action (`action_id`).
+- `Plugin settings` button opens settings for plugin of the selected slot action.

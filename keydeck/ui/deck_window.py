@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from PySide6.QtCore import QEvent, QTimer, Qt, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
@@ -16,6 +18,12 @@ from PySide6.QtWidgets import (
 from keydeck.config import AppSettings
 from keydeck.plugin_api import Action
 from keydeck.ui.deck_button import DeckButtonWidget
+
+
+@dataclass
+class GridMetrics:
+    button_size: int
+    gap: int
 
 
 class DeckWindow(QWidget):
@@ -95,24 +103,39 @@ class DeckWindow(QWidget):
         self.main_layout.addWidget(self.grid_widget)
 
     def rebuild_grid(self) -> None:
+        metrics = self._compute_grid_metrics()
+
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                widget.setParent(None)
                 widget.deleteLater()
 
         self._action_map = {}
-        self.grid_layout.setHorizontalSpacing(self.settings.gap)
-        self.grid_layout.setVerticalSpacing(self.settings.gap)
+        self.grid_layout.setHorizontalSpacing(metrics.gap)
+        self.grid_layout.setVerticalSpacing(metrics.gap)
 
         total = self.settings.rows * self.settings.columns
+        empty_layout = not any(self.settings.slot_actions)
         for index in range(total):
-            action = self.actions[index % len(self.actions)] if self.actions else None
+            action = None
+            slot_action_id = self.settings.slot_actions[index] if index < len(self.settings.slot_actions) else None
+            if slot_action_id:
+                action = self._find_action_by_id(slot_action_id)
+            if action is None and empty_layout and self.actions:
+                action = self.actions[index % len(self.actions)]
+
             title = action.title if action else f"Button {index + 1}"
             button_widget = DeckButtonWidget(
                 index=index,
                 title=title,
-                size=self.settings.button_size,
+                size=metrics.button_size,
+                icon_path=action.icon_path if action else None,
+                icon_mode=action.icon_mode if action else "default",
+                icon_zoom=action.icon_zoom if action else 1.0,
+                icon_offset_x=action.icon_offset_x if action else 0,
+                icon_offset_y=action.icon_offset_y if action else 0,
                 parent=self.grid_widget,
             )
             button_widget.clicked.connect(self._on_button_clicked)
@@ -121,7 +144,17 @@ class DeckWindow(QWidget):
             self.grid_layout.addWidget(button_widget, row, column)
             self._action_map[index] = action
 
-        self.adjustSize()
+        self.grid_widget.adjustSize()
+        self.grid_widget.updateGeometry()
+        self.grid_layout.activate()
+        self.main_layout.activate()
+
+        target_size = self.sizeHint()
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(16777215, 16777215)
+        self.resize(target_size)
+        self.setFixedSize(target_size)
+
         self.move_to_corner()
 
     def update_actions(self, actions: list[Action]) -> None:
@@ -166,6 +199,49 @@ class DeckWindow(QWidget):
 
         available = screen.availableGeometry()
         margin = 16
-        x = available.right() - self.width() - margin
-        y = available.bottom() - self.height() - margin
+        max_w = max(220, available.width() - margin * 2)
+        max_h = max(140, available.height() - margin * 2)
+        if self.width() > max_w or self.height() > max_h:
+            self.setFixedSize(min(self.width(), max_w), min(self.height(), max_h))
+
+        x = available.right() - self.width() - margin + 1
+        y = available.bottom() - self.height() - margin + 1
+        x = max(available.left() + margin, x)
+        y = max(available.top() + margin, y)
         self.move(x, y)
+
+    def _find_action_by_id(self, action_id: str) -> Action | None:
+        for action in self.actions:
+            if action.action_id == action_id:
+                return action
+        return None
+
+    def _compute_grid_metrics(self) -> GridMetrics:
+        base_button = self.settings.button_pixels()
+        base_gap = 10
+        rows = max(1, self.settings.rows)
+        columns = max(1, self.settings.columns)
+
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        if screen is None:
+            return GridMetrics(button_size=base_button, gap=base_gap)
+
+        available = screen.availableGeometry()
+        margin = 16
+        allowed_width = max(260, available.width() - margin * 2)
+        allowed_height = max(200, available.height() - margin * 2)
+
+        # Approximate total size before actual widget layout pass.
+        per_button_height = base_button + 28
+        est_width = 20 + columns * base_button + (columns - 1) * base_gap
+        est_height = 56 + rows * per_button_height + (rows - 1) * base_gap
+
+        if est_width <= allowed_width and est_height <= allowed_height:
+            return GridMetrics(button_size=base_button, gap=base_gap)
+
+        scale_w = allowed_width / est_width
+        scale_h = allowed_height / est_height
+        scale = min(scale_w, scale_h, 1.0)
+        scaled_button = max(44, int(base_button * scale))
+        scaled_gap = max(4, int(base_gap * scale))
+        return GridMetrics(button_size=scaled_button, gap=scaled_gap)

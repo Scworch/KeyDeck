@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import subprocess
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPen, QPixmap
@@ -47,11 +49,15 @@ class KeyDeckApplication(QObject):
         reload_action = QAction("Reload Plugins", menu)
         reload_action.triggered.connect(self.reload_plugins)
 
+        restart_action = QAction("Restart", menu)
+        restart_action.triggered.connect(self.restart_application)
+
         quit_action = QAction("Quit", menu)
         quit_action.triggered.connect(self.qt_app.quit)
 
         menu.addAction(toggle_action)
         menu.addAction(reload_action)
+        menu.addAction(restart_action)
         menu.addSeparator()
         menu.addAction(quit_action)
         tray.setContextMenu(menu)
@@ -71,21 +77,18 @@ class KeyDeckApplication(QObject):
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        painter.setBrush(QColor("#242424"))
-        painter.setPen(QPen(QColor("#7a7a7a"), 2))
-        painter.drawRoundedRect(4, 4, 56, 56, 14, 14)
-
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor("#efefef"))
-        cell = 12
-        gap = 6
-        start_x = 16
-        start_y = 16
+        painter.setBrush(QColor("#ffffff"))
+        cell = 10
+        gap = 4
+        grid_size = cell * 3 + gap * 2
+        start_x = (64 - grid_size) // 2
+        start_y = (64 - grid_size) // 2
         for row in range(3):
             for col in range(3):
                 x = start_x + col * (cell + gap)
                 y = start_y + row * (cell + gap)
-                painter.drawRoundedRect(x, y, cell, cell, 4, 4)
+                painter.drawRect(x, y, cell, cell)
 
         painter.end()
         return QIcon(pixmap)
@@ -108,7 +111,7 @@ class KeyDeckApplication(QObject):
             self.deck_window.hide()
 
     def _open_settings(self) -> None:
-        dialog = SettingsDialog(self.settings, self.deck_window)
+        dialog = SettingsDialog(self.settings, self.deck_window.actions, self.deck_window)
         if dialog.exec():
             self.settings = dialog.to_settings().clamp()
             save_settings(self.settings)
@@ -134,6 +137,14 @@ class KeyDeckApplication(QObject):
                 "Plugin Loader",
                 f"Some plugins failed to load:\n{details}",
             )
+
+    def restart_application(self) -> None:
+        subprocess.Popen(
+            [sys.executable, "-m", "keydeck"],
+            cwd=str(Path(__file__).resolve().parent.parent),
+            close_fds=True,
+        )
+        self.qt_app.quit()
 
     def run(self) -> int:
         return self.qt_app.exec()

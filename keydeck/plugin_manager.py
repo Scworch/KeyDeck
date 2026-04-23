@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -42,7 +43,15 @@ class PluginManager:
         actions: list[Action] = []
         for plugin in self.plugins:
             try:
-                actions.extend(plugin.actions())
+                plugin_actions = plugin.actions()
+                for action in plugin_actions:
+                    if not action.plugin_id:
+                        action.plugin_id = (
+                            plugin.context.plugin_id if plugin.context else plugin.__class__.__name__
+                        )
+                    if action.settings_callback is None:
+                        action.settings_callback = plugin.open_settings
+                actions.extend(plugin_actions)
             except Exception as exc:  # noqa: BLE001
                 self.errors.append(
                     f"{getattr(plugin, 'plugin_name', plugin.__class__.__name__)}: {exc}"
@@ -100,7 +109,12 @@ class PluginManager:
             raise RuntimeError("Cannot create import spec")
 
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(module_name, None)
+            raise
 
         plugin_class = getattr(module, "Plugin", None)
         if plugin_class is None:
@@ -134,6 +148,8 @@ class PluginManager:
             action_id=f"{context.plugin_id}.run",
             title=context.plugin_name,
             callback=lambda: self._run_script_plugin(context),
+            plugin_id=context.plugin_id,
+            settings_callback=lambda: self._open_settings_file(context),
         )
 
     def _run_script_plugin(self, context: PluginContext) -> None:
@@ -164,3 +180,6 @@ class PluginManager:
             arg = arg.replace("{plugin_dir}", str(context.plugin_dir))
             args.append(arg)
         return args
+
+    def _open_settings_file(self, context: PluginContext) -> None:
+        os.startfile(str(context.settings_file))

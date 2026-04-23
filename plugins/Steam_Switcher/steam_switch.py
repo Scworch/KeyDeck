@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -10,8 +13,29 @@ import winreg
 
 
 STEAM_REG_PATH = r"Software\Valve\Steam"
-MAX_KILL_RETRIES = 10
 DEFAULT_CONFIG_NAME = "steam_switch_settings.json"
+PROCESS_POLL_TRIES = 8
+PROCESS_POLL_DELAY_SEC = 0.12
+
+CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def _run_hidden(args: list[str], check: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+        check=check,
+        creationflags=CREATE_NO_WINDOW,
+    )
+
+
+def _popen_hidden(args: list[str]) -> subprocess.Popen:
+    return subprocess.Popen(  # noqa: S603
+        args,
+        creationflags=CREATE_NO_WINDOW,
+        close_fds=True,
+    )
 
 
 def read_registry_string(root: Any, key_path: str, value_name: str) -> str:
@@ -119,33 +143,53 @@ def dump_vdf(data: dict[str, Any], indent: str = "\t") -> str:
 
 
 def is_steam_running() -> bool:
-    result = subprocess.run(
-        ["tasklist", "/FI", "IMAGENAME eq steam.exe"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = _run_hidden(["tasklist", "/FI", "IMAGENAME eq steam.exe"], check=False)
     output = (result.stdout + "\n" + result.stderr).lower()
     return "steam.exe" in output
 
 
 def stop_steam() -> None:
-    retries = 0
-    while is_steam_running():
-        subprocess.run(["taskkill", "/IM", "steam.exe", "/F"], check=False, capture_output=True)
-        retries += 1
-        if retries > MAX_KILL_RETRIES:
-            raise RuntimeError("Steam is still running after repeated kill attempts")
-        time.sleep(1.0)
+    if not is_steam_running():
+        return
+
+    # Fast path: force-close once and do a short bounded wait.
+    _run_hidden(["taskkill", "/IM", "steam.exe", "/F", "/T"], check=False)
+    for _ in range(PROCESS_POLL_TRIES):
+        if not is_steam_running():
+            return
+        time.sleep(PROCESS_POLL_DELAY_SEC)
+
+    # Do not hard-fail here: starting Steam right after may still succeed,
+    # and this keeps switching responsive.
 
 
 def start_steam() -> None:
-    subprocess.run(["cmd", "/c", "start", "", "steam://open/main"], check=True)
+    # Opens Steam main window without flashing console windows.
+    try:
+        os.startfile("steam://open/main")
+        return
+    except OSError:
+        pass
+
+    steam_exe = get_steam_exe_path()
+    if steam_exe.exists():
+        _popen_hidden([str(steam_exe)])
+        return
+
+    raise RuntimeError("Cannot start Steam: steam:// handler and SteamExe are unavailable")
 
 
 def get_steam_path() -> Path:
     steam_path = read_registry_string(winreg.HKEY_CURRENT_USER, STEAM_REG_PATH, "SteamPath")
     return Path(steam_path)
+
+
+def get_steam_exe_path() -> Path:
+    try:
+        steam_exe = read_registry_string(winreg.HKEY_CURRENT_USER, STEAM_REG_PATH, "SteamExe")
+        return Path(steam_exe)
+    except OSError:
+        return get_steam_path() / "steam.exe"
 
 
 def load_loginusers(path: Path) -> dict[str, Any]:
@@ -157,18 +201,53 @@ def load_loginusers(path: Path) -> dict[str, Any]:
 
 
 def list_remembered_accounts(data: dict[str, Any]) -> list[tuple[str, str]]:
-    users = data.get("users", {})
     items: list[tuple[str, str]] = []
-    for steam_id, record in users.items():
-        if not isinstance(record, dict):
-            continue
-        if str(record.get("RememberPassword", "0")) != "1":
-            continue
+    for _steam_id, record in iter_remembered_user_records(data):
         account_name = str(record.get("AccountName", "")).strip()
         persona_name = str(record.get("PersonaName", "")).strip()
         if account_name:
             items.append((account_name, persona_name or account_name))
     return items
+
+
+def iter_remembered_user_records(data: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    users = data.get("users", {})
+    items: list[tuple[str, dict[str, Any]]] = []
+    for steam_id, record in users.items():
+        if not isinstance(record, dict):
+            continue
+        if str(record.get("RememberPassword", "0")) != "1":
+            continue
+        items.append((str(steam_id), record))
+    return items
+
+
+def avatar_path_for_user(steam_path: Path, steam_id: str, user_record: dict[str, Any]) -> str | None:
+    avatar_dir = steam_path / "config" / "avatarcache"
+
+    # Common local Steam cache format: avatar filename is steamid.
+    steam_id = str(steam_id).strip()
+    if steam_id:
+        for ext in (".png", ".jpg", ".jpeg"):
+            by_steam_id = avatar_dir / f"{steam_id}{ext}"
+            if by_steam_id.exists():
+                return str(by_steam_id)
+
+    # Alternate format by avatar hash.
+    avatar_hash = str(user_record.get("AvatarHash", "")).strip()
+    if not avatar_hash:
+        return None
+
+    candidates = [
+        avatar_dir / f"{avatar_hash}_full.jpg",
+        avatar_dir / f"{avatar_hash}_full.png",
+        avatar_dir / f"{avatar_hash}.jpg",
+        avatar_dir / f"{avatar_hash}.png",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return None
 
 
 def set_allow_autologin_for_all_users(data: dict[str, Any]) -> None:

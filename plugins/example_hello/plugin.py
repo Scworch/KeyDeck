@@ -22,14 +22,16 @@ class Plugin(PluginBase):
     def actions(self) -> list[Action]:
         return [
             Action(
-                action_id="hello_popup",
+                action_id=f"{self.plugin_id}.hello_popup",
                 title="Hello",
                 callback=self.show_hello,
+                plugin_id=self.plugin_id,
             ),
             Action(
-                action_id="time_popup",
+                action_id=f"{self.plugin_id}.time_popup",
                 title="Time",
                 callback=self.show_time,
+                plugin_id=self.plugin_id,
             ),
         ]
 

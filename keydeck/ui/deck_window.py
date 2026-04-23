@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEvent, QTimer, Qt, Signal
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtCore import QEvent, QSize, QTimer, Qt, Signal
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QGridLayout,
@@ -71,18 +71,25 @@ class DeckWindow(QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 13px;")
 
         self.settings_button = QToolButton(self)
-        self.settings_button.setText("CFG")
         self.settings_button.setToolTip("Settings")
         self.settings_button.setCursor(Qt.PointingHandCursor)
         self.settings_button.clicked.connect(self.settings_requested.emit)
+        icon_path = (self._project_root() / "icons" / "settings.svg")
+        if icon_path.exists():
+            self.settings_button.setIcon(QIcon(str(icon_path)))
+            self.settings_button.setIconSize(QSize(16, 16))
+        else:
+            self.settings_button.setText("CFG")
         self.settings_button.setStyleSheet(
             """
             QToolButton {
                 background-color: #2a2a2a;
                 border: 1px solid #3a3a3a;
-                border-radius: 10px;
+                border-radius: 12px;
                 color: #e6e6e6;
-                padding: 4px 8px;
+                padding: 4px;
+                min-width: 28px;
+                min-height: 28px;
             }
             QToolButton:hover {
                 background-color: #3a3a3a;
@@ -245,3 +252,8 @@ class DeckWindow(QWidget):
         scaled_button = max(44, int(base_button * scale))
         scaled_gap = max(4, int(base_gap * scale))
         return GridMetrics(button_size=scaled_button, gap=scaled_gap)
+
+    def _project_root(self):
+        from pathlib import Path
+
+        return Path(__file__).resolve().parents[2]

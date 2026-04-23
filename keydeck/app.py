@@ -111,7 +111,12 @@ class KeyDeckApplication(QObject):
             self.deck_window.hide()
 
     def _open_settings(self) -> None:
-        dialog = SettingsDialog(self.settings, self.deck_window.actions, self.deck_window)
+        dialog = SettingsDialog(
+            self.settings,
+            self.deck_window.actions,
+            reload_plugins_callback=self._reload_plugins_for_settings,
+            parent=self.deck_window,
+        )
         if dialog.exec():
             self.settings = dialog.to_settings().clamp()
             save_settings(self.settings)
@@ -137,6 +142,12 @@ class KeyDeckApplication(QObject):
                 "Plugin Loader",
                 f"Some plugins failed to load:\n{details}",
             )
+
+    def _reload_plugins_for_settings(self) -> list[Action]:
+        self.plugin_manager.load_plugins()
+        actions = self.plugin_manager.all_actions()
+        self.deck_window.update_actions(actions)
+        return actions
 
     def restart_application(self) -> None:
         subprocess.Popen(

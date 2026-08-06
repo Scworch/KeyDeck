@@ -1820,3 +1820,29 @@
 [2026-08-06 21:22:50] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
 [2026-08-06 21:22:50] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
 [2026-08-06 21:22:50] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:24:06] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:24:06] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15
+[2026-08-06 21:24:20] [INFO] =========================================
+[2026-08-06 21:24:20] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:24:20] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:24:20] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:24:20] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:24:20] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:24:20] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:24:20] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:26:02] [INFO] =========================================
+[2026-08-06 21:26:02] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:26:02] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:26:02] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:26:02] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:26:02] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:26:02] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:26:02] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:27:09] [INFO] =========================================
+[2026-08-06 21:27:09] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:27:09] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:27:09] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:27:09] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:27:09] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:27:09] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:27:09] [INFO] Low-level keyboard hook active and listening for key events.

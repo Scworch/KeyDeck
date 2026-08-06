@@ -276,10 +276,12 @@ class PreviewSquircleButton(SquircleButton):
         except (TypeError, ValueError):
             source_slot = -1
         if source_slot >= 0 and source_slot != self.slot_index:
-            self.swap_requested.emit(source_slot, self.slot_index)
+            target_slot = self.slot_index
             event.acceptProposedAction()
+            QTimer.singleShot(0, lambda s=source_slot, t=target_slot: self.swap_requested.emit(s, t))
             return
         super().dropEvent(event)
+
 
     def _start_drag(self) -> None:
         mime = QMimeData()

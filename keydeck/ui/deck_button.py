@@ -81,10 +81,15 @@ class SquircleButton(QPushButton):
         _ = event
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
-        rect = self.rect().adjusted(1, 1, -1, -1)
+        
+        # Enforce strict 1:1 square aspect ratio geometry centered inside widget bounds
+        side = max(10, min(self.width(), self.height()) - 2)
+        rect = QRectF(0.0, 0.0, float(side), float(side))
+        rect.moveCenter(QPointF(self.width() / 2.0, self.height() / 2.0))
 
+        radius = max(10.0, float(side * 0.28))
         path = QPainterPath()
-        path.addRoundedRect(rect, self._radius, self._radius)
+        path.addRoundedRect(rect, radius, radius)
         painter.setClipPath(path)
 
         bg_color = QColor("#222222") if self._show_plus else QColor("#2a2a2a")
@@ -94,13 +99,13 @@ class SquircleButton(QPushButton):
             # Draw sleek plus icon for empty slots
             painter.setClipping(False)
             pen_color = QColor("#ffffff") if self._hovered else QColor("#666666")
-            pen = QPen(pen_color, max(2, int(rect.width() * 0.05)))
+            pen = QPen(pen_color, max(2.0, float(side * 0.06)))
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
             cx, cy = rect.center().x(), rect.center().y()
-            arm = int(rect.width() * 0.16)
-            painter.drawLine(int(cx - arm), int(cy), int(cx + arm), int(cy))
-            painter.drawLine(int(cx), int(cy - arm), int(cx), int(cy + arm))
+            arm = float(side * 0.16)
+            painter.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
+            painter.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
             painter.setClipPath(path)
 
         if not self._avatar.isNull():
@@ -148,6 +153,7 @@ class SquircleButton(QPushButton):
         border_pen = QPen(QColor("#0078d4"), 2) if self._drop_target else QPen(QColor("#3a3a3a"), 1)
         painter.setPen(border_pen)
         painter.drawPath(path)
+
 
 
     def _trim_transparent_padding(self, pixmap: QPixmap) -> QPixmap:

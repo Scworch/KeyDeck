@@ -49,19 +49,22 @@ class DeckWindow(QWidget):
         self.setStyleSheet(
             """
             QWidget {
-                background-color: #141414;
-                color: #e6e6e6;
+                background-color: #121212;
+                color: #f0f0f0;
+                border-radius: 14px;
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             }
             """
         )
 
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(10, 10, 10, 10)
+        self.main_layout.setContentsMargins(14, 12, 14, 14)
         self.main_layout.setSpacing(10)
 
         self._build_header()
         self._build_grid_container()
         self.rebuild_grid()
+
 
     def _build_header(self) -> None:
         header_layout = QHBoxLayout()

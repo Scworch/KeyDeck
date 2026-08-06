@@ -36,37 +36,79 @@ class Plugin(PluginBase):
             self.context.save_settings(self._merged_settings())
 
     def actions(self) -> list[Action]:
+        aliases: list[str] = []
+        try:
+            steam_path = steam_switch.get_steam_path()
+            data = steam_switch.load_loginusers(steam_path / "config" / "loginusers.vdf")
+            accounts = steam_switch.iter_remembered_user_records(data)
+            for steam_id, record in accounts:
+                acc_name = str(record.get("AccountName", "")).strip()
+                if acc_name:
+                    aliases.append(f"{self.plugin_id}.switch.{acc_name.lower()}")
+        except Exception:
+            pass
+
+        return [
+            Action(
+                action_id=f"{self.plugin_id}.switch",
+                title="Steam Switcher",
+                callback=self._switch_account,
+                plugin_id=self.plugin_id,
+                settings_callback=self.open_settings,
+                action_settings_callback=self._open_action_settings,
+                action_icon_callback=self._get_action_icon,
+                aliases=aliases,
+            )
+        ]
+
+    def _get_action_icon(self, slot: int, current_settings: dict) -> str | None:
+        account_name = current_settings.get("account_name")
+        if not account_name:
+            return None
+            
+        try:
+            steam_path = steam_switch.get_steam_path()
+            data = steam_switch.load_loginusers(steam_path / "config" / "loginusers.vdf")
+            accounts = steam_switch.iter_remembered_user_records(data)
+            for steam_id, record in accounts:
+                rec_name = str(record.get("AccountName", "")).strip()
+                if rec_name == account_name:
+                    avatar_path = steam_switch.avatar_path_for_user(steam_path, steam_id, record)
+                    return avatar_path
+        except Exception:
+            pass
+        return None
+
+    def _open_action_settings(self, slot: int, current_settings: dict) -> dict | None:
         try:
             steam_path = steam_switch.get_steam_path()
             data = steam_switch.load_loginusers(steam_path / "config" / "loginusers.vdf")
             accounts = steam_switch.iter_remembered_user_records(data)
         except Exception as exc:  # noqa: BLE001
-            return [
-                Action(
-                    action_id=f"{self.plugin_id}.error",
-                    title="Steam: error",
-                    callback=lambda: QMessageBox.critical(None, "SteamSwitcher", str(exc)),
-                    plugin_id=self.plugin_id,
-                    settings_callback=self.open_settings,
-                )
-            ]
+            QMessageBox.critical(None, "SteamSwitcher", str(exc))
+            return None
 
         if not accounts:
-            return [
-                Action(
-                    action_id=f"{self.plugin_id}.no_accounts",
-                    title="Steam: no accounts",
-                    callback=lambda: QMessageBox.warning(
-                        None,
-                        "SteamSwitcher",
-                        "No remembered Steam accounts found.",
-                    ),
-                    plugin_id=self.plugin_id,
-                    settings_callback=self.open_settings,
-                )
-            ]
+            QMessageBox.warning(None, "SteamSwitcher", "No remembered Steam accounts found.")
+            return None
 
-        actions: list[Action] = []
+        parent = QApplication.activeModalWidget() or QApplication.activeWindow()
+        dialog = QDialog(parent)
+        dialog.setWindowTitle("Select Steam Account")
+        dialog.setModal(True)
+
+        layout = QVBoxLayout(dialog)
+        
+        from PySide6.QtWidgets import QListWidget, QListWidgetItem
+        from PySide6.QtGui import QIcon
+        from PySide6.QtCore import QSize, Qt
+
+        list_widget = QListWidget(dialog)
+        list_widget.setIconSize(QSize(32, 32))
+        list_widget.itemDoubleClicked.connect(dialog.accept)
+        
+        selected_account = current_settings.get("account_name", "")
+        
         for steam_id, record in accounts:
             account_name = str(record.get("AccountName", "")).strip()
             if not account_name:
@@ -77,26 +119,34 @@ class Plugin(PluginBase):
             title = account_name
             if not title and persona_name:
                 title = persona_name
-            actions.append(
-                Action(
-                    action_id=f"{self.plugin_id}.switch.{account_name.lower()}",
-                    title=title,
-                    callback=lambda acc=account_name: self._switch_account(acc),
-                    plugin_id=self.plugin_id,
-                    settings_callback=self.open_settings,
-                    icon_path=avatar_path,
-                )
-            )
-        return actions
+                
+            item = QListWidgetItem(title)
+            item.setData(Qt.UserRole, account_name)
+            if avatar_path and Path(avatar_path).exists():
+                item.setIcon(QIcon(avatar_path))
+            list_widget.addItem(item)
+            
+            if account_name == selected_account:
+                list_widget.setCurrentItem(item)
+
+        layout.addWidget(list_widget)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        if dialog.exec():
+            item = list_widget.currentItem()
+            if item:
+                return {"account_name": item.data(Qt.UserRole)}
+        return None
 
     def open_settings(self) -> None:
-        if self.context is None:
-            return
-
         current = self._merged_settings()
         parent = QApplication.activeModalWidget() or QApplication.activeWindow()
         dialog = QDialog(parent)
-        dialog.setWindowTitle("SteamSwitcher settings")
+        dialog.setWindowTitle("SteamSwitcher Global Settings")
         dialog.setModal(True)
 
         layout = QVBoxLayout(dialog)
@@ -123,13 +173,21 @@ class Plugin(PluginBase):
             }
             self.context.save_settings(new_settings)
 
-    def _switch_account(self, account_name: str) -> None:
+    def _switch_account_with_fallback(self, action_settings: dict, default_account: str) -> None:
+        account_name = action_settings.get("account_name") or default_account
+        if not account_name:
+            QMessageBox.warning(None, "SteamSwitcher", "No account selected for this button. Right-click and choose 'Action Settings...'")
+            return
+            
         settings = self._merged_settings()
         steam_switch.switch_account(
             account_name=account_name,
             close_steam_before_switch=bool(settings.get("close_steam_before_switch", True)),
             launch_steam_after_switch=bool(settings.get("launch_steam_after_switch", True)),
         )
+
+    def _switch_account(self, action_settings: dict) -> None:
+        self._switch_account_with_fallback(action_settings, "")
 
     def _merged_settings(self) -> dict:
         if self.context is None:

@@ -39,9 +39,31 @@ class KeyDeckApplication(QObject):
         self.deck_window.action_requested.connect(self._run_action)
         self.deck_window.blur_hide_requested.connect(self._hide_on_blur)
 
+        from keydeck.hotkey_manager import HotkeyManager
+
         self._is_settings_open = False
         self.tray_icon = self._create_tray()
         self.tray_icon.show()
+
+        self.hotkey_manager = HotkeyManager(self._execute_slot)
+        self.hotkey_manager.apply_hotkeys(self.settings.slot_hotkeys)
+
+    def _execute_slot(self, slot: int) -> None:
+        if slot < 0 or slot >= len(self.settings.slot_actions):
+            return
+        action_id = self.settings.slot_actions[slot]
+        if not action_id:
+            return
+        
+        # Find the action by ID
+        action = None
+        for a in self.deck_window.actions:
+            if a.action_id == action_id:
+                action = a
+                break
+                
+        if action:
+            self._run_action(action, slot)
 
     def _create_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(self._load_tray_icon(), self.qt_app)
@@ -133,20 +155,98 @@ class KeyDeckApplication(QObject):
             )
 
             if dialog.exec():
-                self.settings = dialog.to_settings().clamp()
+                new_settings = dialog.to_settings().clamp()
+                
+                # Check for autostart changes
+                if self.settings.auto_start != new_settings.auto_start:
+                    self._update_autostart_task(new_settings.auto_start)
+                
+                self.settings = new_settings
                 save_settings(self.settings)
                 self.deck_window.update_actions(dialog.actions)
                 self.deck_window.apply_settings(self.settings)
+                self.hotkey_manager.apply_hotkeys(self.settings.slot_hotkeys)
         finally:
             self._is_settings_open = False
 
+    def _update_autostart_task(self, enable: bool) -> None:
+        if sys.platform != "win32":
+            return
+        import subprocess
+        try:
+            if enable:
+                import tempfile
+                exe_path = sys.executable
+                script_path = str(Path(__file__).resolve().parent.parent)
+                xml_content = f"""<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Author>KeyDeck</Author>
+    <URI>\\KeyDeck_AutoStart</URI>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>false</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>true</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>"{exe_path}"</Command>
+      <Arguments>-m keydeck</Arguments>
+      <WorkingDirectory>{script_path}</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>"""
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", encoding="utf-16", delete=False) as f:
+                    f.write(xml_content)
+                    temp_xml = f.name
+                
+                subprocess.run(["schtasks", "/Create", "/TN", "KeyDeck_AutoStart", "/XML", temp_xml, "/F"], creationflags=subprocess.CREATE_NO_WINDOW)
+                Path(temp_xml).unlink(missing_ok=True)
+            else:
+                subprocess.run(["schtasks", "/Delete", "/TN", "KeyDeck_AutoStart", "/F"], creationflags=subprocess.CREATE_NO_WINDOW)
+        except Exception as e:
+            print(f"Failed to update Task Scheduler: {e}")
 
-    def _run_action(self, action: Action | None) -> None:
+
+    def _run_action(self, action: Action | None, slot: int = -1) -> None:
         if action is None:
             return
 
         try:
-            action.callback()
+            # Check if callback expects a slot argument
+            import inspect
+            sig = inspect.signature(action.callback)
+            if len(sig.parameters) > 0:
+                settings = self.settings.slot_settings.get(str(slot), {})
+                action.callback(settings)
+            else:
+                action.callback()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self.deck_window, "Action Failed", str(exc))
             return

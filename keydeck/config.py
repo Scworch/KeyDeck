@@ -26,6 +26,10 @@ class AppSettings:
     columns: int = 4
     button_size: str = "medium"
     slot_actions: list[str | None] = field(default_factory=list)
+    slot_settings: dict[str, dict[str, Any]] = field(default_factory=dict)
+    slot_hotkeys: dict[str, str] = field(default_factory=dict)
+    auto_start: bool = True
+    high_priority: bool = True
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AppSettings":
@@ -52,11 +56,23 @@ class AppSettings:
                 else:
                     slot_actions.append(None)
 
+        slot_settings = data.get("slot_settings", {})
+        if not isinstance(slot_settings, dict):
+            slot_settings = {}
+            
+        slot_hotkeys = data.get("slot_hotkeys", {})
+        if not isinstance(slot_hotkeys, dict):
+            slot_hotkeys = {}
+
         settings = cls(
             rows=int(data.get("rows", defaults.rows)),
             columns=int(data.get("columns", defaults.columns)),
             button_size=button_size,
             slot_actions=slot_actions,
+            slot_settings=slot_settings,
+            slot_hotkeys=slot_hotkeys,
+            auto_start=bool(data.get("auto_start", defaults.auto_start)),
+            high_priority=bool(data.get("high_priority", defaults.high_priority)),
         )
         return settings.clamp()
 

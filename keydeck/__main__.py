@@ -8,9 +8,12 @@ from keydeck.app import main
 if __name__ == "__main__":
     if sys.platform == "win32":
         try:
-            import ctypes
-            # 0x00000080 is HIGH_PRIORITY_CLASS
-            ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000080)
+            from keydeck.config import load_settings
+            settings = load_settings()
+            if settings.high_priority:
+                import ctypes
+                # 0x00000080 is HIGH_PRIORITY_CLASS
+                ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000080)
         except Exception:
             pass
     raise SystemExit(main())

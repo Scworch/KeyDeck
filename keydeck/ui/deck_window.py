@@ -28,8 +28,8 @@ class GridMetrics:
 
 class DeckWindow(QWidget):
     settings_requested = Signal()
-    action_requested = Signal(object)
     blur_hide_requested = Signal()
+    action_requested = Signal(object, int)
 
     def __init__(
         self,
@@ -139,11 +139,23 @@ class DeckWindow(QWidget):
                 action = self.actions[index % len(self.actions)]
 
             title = action.title if action else f"Button {index + 1}"
+            
+            icon_path = action.icon_path if action else None
+            slot_settings = self.settings.slot_settings.get(str(index), {})
+            
+            if action and action.action_icon_callback:
+                dyn_icon = action.action_icon_callback(index, slot_settings)
+                if dyn_icon:
+                    icon_path = dyn_icon
+                    
+            if action and "account_name" in slot_settings:
+                title = slot_settings["account_name"]
+
             button_widget = DeckButtonWidget(
                 index=index,
                 title=title,
                 size=metrics.button_size,
-                icon_path=action.icon_path if action else None,
+                icon_path=icon_path,
                 icon_mode=action.icon_mode if action else "default",
                 icon_zoom=action.icon_zoom if action else 1.0,
                 icon_offset_x=action.icon_offset_x if action else 0,
@@ -179,7 +191,7 @@ class DeckWindow(QWidget):
         self.rebuild_grid(resize_window=True)
 
     def _on_button_clicked(self, index: int) -> None:
-        self.action_requested.emit(self._action_map.get(index))
+        self.action_requested.emit(self._action_map.get(index), index)
 
     def showEvent(self, event) -> None:  # noqa: N802
         super().showEvent(event)

@@ -16,6 +16,8 @@ class Action:
     callback: Callable[[], None]
     plugin_id: str = "core"
     settings_callback: Callable[[], None] | None = None
+    action_settings_callback: Callable[[int, dict], dict] | None = None
+    action_icon_callback: Callable[[int, dict], str | None] | None = None
     icon_path: str | None = None
     icon_mode: str = "default"
     icon_zoom: float = 1.0

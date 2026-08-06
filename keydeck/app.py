@@ -39,6 +39,7 @@ class KeyDeckApplication(QObject):
         self.deck_window.action_requested.connect(self._run_action)
         self.deck_window.blur_hide_requested.connect(self._hide_on_blur)
 
+        self._is_settings_open = False
         self.tray_icon = self._create_tray()
         self.tray_icon.show()
 
@@ -112,25 +113,31 @@ class KeyDeckApplication(QObject):
         self.deck_window.activateWindow()
 
     def _hide_on_blur(self) -> None:
+        if self._is_settings_open:
+            return
         if self.deck_window.isVisible():
             self.deck_window.hide()
 
     def _open_settings(self) -> None:
-        dialog = SettingsDialog(
-            self.settings,
-            self.deck_window.actions,
-            plugins=self.plugin_manager.get_plugins(),
-            plugin_errors=self.plugin_manager.errors,
-            reload_plugins_callback=self._load_plugins_for_settings,
-            parent=self.deck_window,
-        )
+        self._is_settings_open = True
+        try:
+            dialog = SettingsDialog(
+                self.settings,
+                self.deck_window.actions,
+                plugins=self.plugin_manager.get_plugins(),
+                plugin_errors=self.plugin_manager.errors,
+                reload_plugins_callback=self._load_plugins_for_settings,
+                parent=self.deck_window,
+            )
 
+            if dialog.exec():
+                self.settings = dialog.to_settings().clamp()
+                save_settings(self.settings)
+                self.deck_window.update_actions(dialog.actions)
+                self.deck_window.apply_settings(self.settings)
+        finally:
+            self._is_settings_open = False
 
-        if dialog.exec():
-            self.settings = dialog.to_settings().clamp()
-            save_settings(self.settings)
-            self.deck_window.update_actions(dialog.actions)
-            self.deck_window.apply_settings(self.settings)
 
     def _run_action(self, action: Action | None) -> None:
         if action is None:

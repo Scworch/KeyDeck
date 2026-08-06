@@ -8,8 +8,8 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 class SquircleButton(QPushButton):
     def __init__(self, size: int, parent: QWidget | None = None) -> None:
         super().__init__("", parent)
-        self._size = size
-        self._radius = max(14, int(size * 0.28))
+        self._size = max(32, int(size))
+        self._radius = max(10, int(self._size * 0.28))
         self._avatar = QPixmap()
         self._avatar_mode = "cover"
         self._avatar_zoom = 1.0
@@ -17,6 +17,11 @@ class SquircleButton(QPushButton):
         self._avatar_offset_y = 0
         self._show_plus = False
         self._drop_target = False
+        self._hovered = False
+        self._pressed = False
+        self.setFixedSize(self._size, self._size)
+        self.setMinimumSize(self._size, self._size)
+        self.setMaximumSize(self._size, self._size)
 
     def set_show_plus(self, show: bool) -> None:
         self._show_plus = bool(show)
@@ -82,12 +87,11 @@ class SquircleButton(QPushButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
         
-        # Enforce strict 1:1 square aspect ratio geometry centered inside widget bounds
-        side = max(10, min(self.width(), self.height()) - 2)
-        rect = QRectF(0.0, 0.0, float(side), float(side))
-        rect.moveCenter(QPointF(self.width() / 2.0, self.height() / 2.0))
+        w = float(self.width())
+        h = float(self.height())
+        rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
 
-        radius = max(10.0, float(side * 0.28))
+        radius = max(8.0, float(min(w, h) * 0.28))
         path = QPainterPath()
         path.addRoundedRect(rect, radius, radius)
         painter.setClipPath(path)
@@ -99,11 +103,11 @@ class SquircleButton(QPushButton):
             # Draw sleek plus icon for empty slots
             painter.setClipping(False)
             pen_color = QColor("#ffffff") if self._hovered else QColor("#666666")
-            pen = QPen(pen_color, max(2.0, float(side * 0.06)))
+            pen = QPen(pen_color, max(2.0, float(min(w, h) * 0.06)))
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
             cx, cy = rect.center().x(), rect.center().y()
-            arm = float(side * 0.16)
+            arm = float(min(w, h) * 0.16)
             painter.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
             painter.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
             painter.setClipPath(path)
@@ -153,6 +157,7 @@ class SquircleButton(QPushButton):
         border_pen = QPen(QColor("#0078d4"), 2) if self._drop_target else QPen(QColor("#3a3a3a"), 1)
         painter.setPen(border_pen)
         painter.drawPath(path)
+
 
 
 

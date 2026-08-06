@@ -1846,3 +1846,30 @@
 [2026-08-06 21:27:09] [INFO] Decrease triggers: name='f14', vk=125
 [2026-08-06 21:27:09] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
 [2026-08-06 21:27:09] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:28:49] [INFO] Wave Link Plugin stopped.
+[2026-08-06 21:28:49] [INFO] =========================================
+[2026-08-06 21:28:50] [INFO] =========================================
+[2026-08-06 21:28:50] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:28:50] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:28:50] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:28:50] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:28:50] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:28:50] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:28:50] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:29:29] [INFO] =========================================
+[2026-08-06 21:29:29] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:29:29] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:29:29] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:29:29] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:29:29] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:29:30] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:29:30] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:29:32] [DEBUG] [KEY PRESS] name='print screen', vk=None, scan_code=55
+[2026-08-06 21:29:33] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:29:34] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:29:44] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:29:44] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15
+[2026-08-06 21:30:00] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:30:00] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15
+[2026-08-06 21:30:01] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:30:01] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15

@@ -113,10 +113,9 @@ class KeyDeckApplication(QObject):
         self.deck_window.activateWindow()
 
     def _hide_on_blur(self) -> None:
-        if self._is_settings_open:
-            return
-        if self.deck_window.isVisible():
-            self.deck_window.hide()
+        # User requested no automatic blur hide (window is toggled via tray)
+        pass
+
 
     def _open_settings(self) -> None:
         self._is_settings_open = True

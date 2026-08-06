@@ -51,10 +51,13 @@ class Plugin(PluginBase):
                 action_id=f"{self.plugin_id}.clear",
                 title=self.settings.action_title,
                 callback=self.clear_session,
+                icon_path=str(PLUGIN_DIR / "icon.png"),
+                icon_mode="cover",
                 plugin_id=self.plugin_id,
                 settings_callback=self.open_settings,
             )
         ]
+
 
     def clear_session(self) -> None:
         run_async(

@@ -168,12 +168,11 @@ class Plugin(PluginBase):
         ]
         
     def _get_icon_path(self) -> str | None:
-        # Check if there is an icon in the plugin directory
-        if self.context:
-            icon_path = self.context.plugin_dir / "icon.png"
-            if icon_path.exists():
-                return str(icon_path)
+        icon_path = Path(__file__).parent / "icon.png"
+        if icon_path.exists():
+            return str(icon_path)
         return None
+
 
     def open_settings(self) -> None:
         zapret_dir = get_zapret_dir()

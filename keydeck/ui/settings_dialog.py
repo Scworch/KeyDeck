@@ -278,9 +278,12 @@ class PreviewSquircleButton(SquircleButton):
         if source_slot >= 0 and source_slot != self.slot_index:
             target_slot = self.slot_index
             event.acceptProposedAction()
-            QTimer.singleShot(0, lambda s=source_slot, t=target_slot: self.swap_requested.emit(s, t))
+            dialog = self.window()
+            if hasattr(dialog, "_swap_slots"):
+                QTimer.singleShot(0, lambda s=source_slot, t=target_slot: dialog._swap_slots(s, t))
             return
         super().dropEvent(event)
+
 
 
     def _start_drag(self) -> None:

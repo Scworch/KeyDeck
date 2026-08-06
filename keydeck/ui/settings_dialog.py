@@ -250,17 +250,24 @@ class PreviewSquircleButton(SquircleButton):
 
     def dragEnterEvent(self, event) -> None:  # noqa: N802, ANN001
         if event.mimeData().hasFormat(MIME_SLOT_INDEX):
+            self.set_drop_target(True)
             event.acceptProposedAction()
             return
         super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event) -> None:  # noqa: N802, ANN001
         if event.mimeData().hasFormat(MIME_SLOT_INDEX):
+            self.set_drop_target(True)
             event.acceptProposedAction()
             return
         super().dragMoveEvent(event)
 
+    def dragLeaveEvent(self, event) -> None:  # noqa: N802, ANN001
+        self.set_drop_target(False)
+        super().dragLeaveEvent(event)
+
     def dropEvent(self, event) -> None:  # noqa: N802, ANN001
+        self.set_drop_target(False)
         if not event.mimeData().hasFormat(MIME_SLOT_INDEX):
             super().dropEvent(event)
             return
@@ -326,11 +333,13 @@ class PreviewSquircleButton(SquircleButton):
 class PreviewDeckButtonWidget(QWidget):
     swap_requested = Signal(int, int)
     settings_requested = Signal(int)
+    clear_requested = Signal(int)
 
     def __init__(self, slot_index: int, size: int, settings_icon: QIcon, settings_icon_path: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.slot_index = slot_index
         self.setCursor(Qt.PointingHandCursor)
+        self.current_action: Action | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -345,19 +354,23 @@ class PreviewDeckButtonWidget(QWidget):
         self.title = QLabel(self)
         self.title.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         self.title.setWordWrap(False)
-        self.title.setStyleSheet("color: #d8d8d8; font-size: 10px; background: transparent;")
+        self.title.setStyleSheet("color: #888888; font-size: 10px; background: transparent;")
         self.title.setFixedWidth(size)
         layout.addWidget(self.title, alignment=Qt.AlignHCenter)
 
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     def set_action(self, action: Action | None) -> None:
+        self.current_action = action
         if action is None:
             self.button.set_avatar(None)
-            self.button.set_settings_enabled(True)
-            self._set_title(f"Button {self.slot_index + 1}")
+            self.button.set_show_plus(True)
+            self.button.set_settings_enabled(False)
+            self._set_title("Add Action")
+            self.title.setStyleSheet("color: #666666; font-size: 10px; font-weight: 500;")
             return
 
+        self.button.set_show_plus(False)
         self.button.set_avatar(
             action.icon_path,
             icon_mode=action.icon_mode,
@@ -367,17 +380,51 @@ class PreviewDeckButtonWidget(QWidget):
         )
         self.button.set_settings_enabled(action.settings_callback is not None)
         self._set_title(action.title)
+        self.title.setStyleSheet("color: #d8d8d8; font-size: 10px; font-weight: 600;")
 
     def _set_title(self, title: str) -> None:
         metrics = QFontMetrics(self.title.font())
         self.title.setText(metrics.elidedText(title, Qt.ElideRight, self.title.width()))
 
-    def mouseReleaseEvent(self, event) -> None:  # noqa: N802, ANN001
-        if event.button() == Qt.LeftButton and not self.button.geometry().contains(event.position().toPoint()):
+    def contextMenuEvent(self, event) -> None:  # noqa: N802
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        menu.setStyleSheet(
+            """
+            QMenu {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+                border: 1px solid #333333;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 6px 16px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #0078d4;
+                color: #ffffff;
+            }
+            """
+        )
+        assign_act = menu.addAction("Assign / Change Action...")
+        settings_act = None
+        if self.current_action and self.current_action.settings_callback:
+            settings_act = menu.addAction("Plugin Settings...")
+
+        clear_act = None
+        if self.current_action is not None:
+            clear_act = menu.addAction("Clear Button")
+
+        chosen = menu.exec(event.globalPos())
+        if chosen == assign_act:
             self.settings_requested.emit(self.slot_index)
-            event.accept()
-            return
-        super().mouseReleaseEvent(event)
+        elif chosen == settings_act:
+            self.settings_requested.emit(self.slot_index)
+        elif chosen == clear_act:
+            self.clear_requested.emit(self.slot_index)
+
 
 
 class SettingsDialog(QDialog):
@@ -595,6 +642,7 @@ class SettingsDialog(QDialog):
             )
             widget.swap_requested.connect(self._swap_slots)
             widget.settings_requested.connect(self._open_slot_config)
+            widget.clear_requested.connect(self._clear_slot)
             widget.set_action(self._action_for_slot(slot))
             row_idx = slot // cols
             col_idx = slot % cols
@@ -612,6 +660,12 @@ class SettingsDialog(QDialog):
         )
         self._refresh_slot(source_slot)
         self._refresh_slot(target_slot)
+
+    def _clear_slot(self, slot: int) -> None:
+        if 0 <= slot < len(self._slot_actions):
+            self._slot_actions[slot] = None
+            self._refresh_slot(slot)
+
 
     def _open_slot_config(self, slot: int) -> None:
         if slot < 0 or slot >= len(self._slot_actions):

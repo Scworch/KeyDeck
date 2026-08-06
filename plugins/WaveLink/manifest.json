@@ -1,6 +1,6 @@
 {
-  "id": "wavelink_control",
-  "name": "Wave Link Volume Control",
+  "id": "WaveLink",
+  "name": "Wave Link",
   "version": "1.0.0",
   "entry": "plugin.py",
   "settings": "settings.json"

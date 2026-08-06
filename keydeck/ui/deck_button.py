@@ -15,9 +15,16 @@ class SquircleButton(QPushButton):
         self._avatar_zoom = 1.0
         self._avatar_offset_x = 0
         self._avatar_offset_y = 0
-        self._hovered = False
-        self._pressed = False
-        self.setFixedSize(size, size)
+        self._show_plus = False
+        self._drop_target = False
+
+    def set_show_plus(self, show: bool) -> None:
+        self._show_plus = bool(show)
+        self.update()
+
+    def set_drop_target(self, is_target: bool) -> None:
+        self._drop_target = bool(is_target)
+        self.update()
 
     def set_avatar(
         self,
@@ -80,7 +87,21 @@ class SquircleButton(QPushButton):
         path.addRoundedRect(rect, self._radius, self._radius)
         painter.setClipPath(path)
 
-        painter.fillPath(path, QColor("#2a2a2a"))
+        bg_color = QColor("#222222") if self._show_plus else QColor("#2a2a2a")
+        painter.fillPath(path, bg_color)
+
+        if self._show_plus and self._avatar.isNull():
+            # Draw sleek plus icon for empty slots
+            painter.setClipping(False)
+            pen_color = QColor("#ffffff") if self._hovered else QColor("#666666")
+            pen = QPen(pen_color, max(2, int(rect.width() * 0.05)))
+            pen.setCapStyle(Qt.RoundCap)
+            painter.setPen(pen)
+            cx, cy = rect.center().x(), rect.center().y()
+            arm = int(rect.width() * 0.16)
+            painter.drawLine(int(cx - arm), int(cy), int(cx + arm), int(cy))
+            painter.drawLine(int(cx), int(cy - arm), int(cx), int(cy + arm))
+            painter.setClipPath(path)
 
         if not self._avatar.isNull():
             if self._avatar_mode == "centered":
@@ -124,8 +145,10 @@ class SquircleButton(QPushButton):
             painter.fillPath(path, QColor(0, 0, 0, 70))
 
         painter.setClipping(False)
-        painter.setPen(QPen(QColor("#3a3a3a"), 1))
+        border_pen = QPen(QColor("#0078d4"), 2) if self._drop_target else QPen(QColor("#3a3a3a"), 1)
+        painter.setPen(border_pen)
         painter.drawPath(path)
+
 
     def _trim_transparent_padding(self, pixmap: QPixmap) -> QPixmap:
         if pixmap.isNull():

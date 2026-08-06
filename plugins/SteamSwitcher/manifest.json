@@ -1,6 +1,6 @@
 {
   "id": "SteamSwitcher",
-  "name": "SteamSwitcher",
+  "name": "Steam Switcher",
   "version": "0.1.0",
   "entry": "plugin.py",
   "settings": "steam_switch_settings.json"

@@ -3,7 +3,15 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QMessageBox, QVBoxLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QMessageBox,
+    QVBoxLayout,
+)
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
 
@@ -86,7 +94,8 @@ class Plugin(PluginBase):
             return
 
         current = self._merged_settings()
-        dialog = QDialog()
+        parent = QApplication.activeModalWidget() or QApplication.activeWindow()
+        dialog = QDialog(parent)
         dialog.setWindowTitle("SteamSwitcher settings")
         dialog.setModal(True)
 

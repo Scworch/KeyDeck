@@ -1,3 +1,4 @@
+#KeyDeck/plugins/ResolutionSwitcher/resolution_switch.py
 from __future__ import annotations
 
 import ctypes

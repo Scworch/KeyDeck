@@ -1,3 +1,5 @@
+#KeyDeck/keydeck/plugin_manager.py
+
 from __future__ import annotations
 
 import importlib.util
@@ -19,6 +21,7 @@ class PluginManager:
         self.errors: list[str] = []
 
     def load_plugins(self) -> None:
+        self.stop_plugins()
         self.plugins = []
         self.script_actions = []
         self.errors = []
@@ -39,7 +42,30 @@ class PluginManager:
             except Exception as exc:  # noqa: BLE001
                 self.errors.append(f"{plugin_dir.name}: {exc}")
 
+    def start_plugins(self) -> None:
+        for plugin in self.plugins:
+            try:
+                plugin.start()
+            except Exception as exc:  # noqa: BLE001
+                self.errors.append(
+                    f"Start failed for {getattr(plugin, 'plugin_name', plugin.__class__.__name__)}: {exc}"
+                )
+
+    def stop_plugins(self) -> None:
+        for plugin in self.plugins:
+            try:
+                plugin.stop()
+            except Exception as exc:  # noqa: BLE001
+                self.errors.append(
+                    f"Stop failed for {getattr(plugin, 'plugin_name', plugin.__class__.__name__)}: {exc}"
+                )
+
+
+    def get_plugins(self) -> list[PluginBase]:
+        return list(self.plugins)
+
     def all_actions(self) -> list[Action]:
+
         actions: list[Action] = []
         for plugin in self.plugins:
             try:

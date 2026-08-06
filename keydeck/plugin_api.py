@@ -1,8 +1,10 @@
+#KeyDeck/keydeck/plugin_api.py
+
 from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
@@ -19,6 +21,7 @@ class Action:
     icon_zoom: float = 1.0
     icon_offset_x: int = 0
     icon_offset_y: int = 0
+    aliases: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -62,7 +65,16 @@ class PluginBase:
     def actions(self) -> list[Action]:
         return []
 
+    def start(self) -> None:
+        """Lifecycle method called when the plugin is loaded or background services start."""
+        pass
+
+    def stop(self) -> None:
+        """Lifecycle method called when the plugin is unloaded or background services stop."""
+        pass
+
     def open_settings(self) -> None:
         if self.context is None:
             return
         os.startfile(str(self.context.settings_file))
+

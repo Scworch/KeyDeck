@@ -25,10 +25,15 @@ class KeyDeckApplication(QObject):
         self.settings: AppSettings = load_settings()
         self.plugin_manager = PluginManager(PLUGINS_DIR)
         self.plugin_manager.load_plugins()
+        self.plugin_manager.start_plugins()
+        self.qt_app.aboutToQuit.connect(self.plugin_manager.stop_plugins)
+        actions = self.plugin_manager.all_actions()
+        self._normalize_settings_actions(actions, persist=True)
+
 
         self.deck_window = DeckWindow(
             settings=self.settings,
-            actions=self.plugin_manager.all_actions(),
+            actions=actions,
         )
         self.deck_window.settings_requested.connect(self._open_settings)
         self.deck_window.action_requested.connect(self._run_action)
@@ -114,12 +119,17 @@ class KeyDeckApplication(QObject):
         dialog = SettingsDialog(
             self.settings,
             self.deck_window.actions,
-            reload_plugins_callback=self._reload_plugins_for_settings,
+            plugins=self.plugin_manager.get_plugins(),
+            plugin_errors=self.plugin_manager.errors,
+            reload_plugins_callback=self._load_plugins_for_settings,
             parent=self.deck_window,
         )
+
+
         if dialog.exec():
             self.settings = dialog.to_settings().clamp()
             save_settings(self.settings)
+            self.deck_window.update_actions(dialog.actions)
             self.deck_window.apply_settings(self.settings)
 
     def _run_action(self, action: Action | None) -> None:
@@ -130,10 +140,20 @@ class KeyDeckApplication(QObject):
             action.callback()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self.deck_window, "Action Failed", str(exc))
+            return
+
+        actions = self.plugin_manager.all_actions()
+        self._normalize_settings_actions(actions, persist=True)
+        self.deck_window.update_actions(actions)
 
     def reload_plugins(self) -> None:
         self.plugin_manager.load_plugins()
-        self.deck_window.update_actions(self.plugin_manager.all_actions())
+        self.plugin_manager.start_plugins()
+        actions = self.plugin_manager.all_actions()
+        self._normalize_settings_actions(actions, persist=True)
+        self.deck_window.update_actions(actions)
+        self.deck_window.apply_settings(self.settings)
+
 
         if self.plugin_manager.errors:
             details = "\n".join(self.plugin_manager.errors)
@@ -143,11 +163,20 @@ class KeyDeckApplication(QObject):
                 f"Some plugins failed to load:\n{details}",
             )
 
-    def _reload_plugins_for_settings(self) -> list[Action]:
+    def _load_plugins_for_settings(self) -> list[Action]:
         self.plugin_manager.load_plugins()
         actions = self.plugin_manager.all_actions()
-        self.deck_window.update_actions(actions)
+        self._normalize_settings_actions(actions, persist=False)
         return actions
+
+    def _normalize_settings_actions(self, actions: list[Action], persist: bool) -> None:
+        valid_action_ids = {action.action_id for action in actions}
+        aliases: dict[str, str] = {}
+        for action in actions:
+            for alias in action.aliases:
+                aliases[str(alias)] = action.action_id
+        if self.settings.normalize_action_ids(valid_action_ids, aliases) and persist:
+            save_settings(self.settings)
 
     def restart_application(self) -> None:
         subprocess.Popen(

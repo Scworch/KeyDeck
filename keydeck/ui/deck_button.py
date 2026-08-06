@@ -80,12 +80,7 @@ class SquircleButton(QPushButton):
         path.addRoundedRect(rect, self._radius, self._radius)
         painter.setClipPath(path)
 
-        bg = QColor("#2a2a2a")
-        if self._hovered:
-            bg = QColor("#3a3a3a")
-        if self._pressed:
-            bg = QColor("#1f1f1f")
-        painter.fillPath(path, bg)
+        painter.fillPath(path, QColor("#2a2a2a"))
 
         if not self._avatar.isNull():
             if self._avatar_mode == "centered":
@@ -121,6 +116,12 @@ class SquircleButton(QPushButton):
             )
             source = QRectF(0.0, 0.0, float(scaled.width()), float(scaled.height()))
             painter.drawPixmap(target, scaled, source)
+
+        # Hover/press dim overlay goes on top of icon/background alike.
+        if self._pressed:
+            painter.fillPath(path, QColor(0, 0, 0, 110))
+        elif self._hovered:
+            painter.fillPath(path, QColor(0, 0, 0, 70))
 
         painter.setClipping(False)
         painter.setPen(QPen(QColor("#3a3a3a"), 1))

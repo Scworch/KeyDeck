@@ -1,6 +1,6 @@
 {
-  "id": "example_hello",
-  "name": "Example Hello",
+  "id": "ZapretToggler",
+  "name": "Zapret Toggler",
   "version": "0.1.0",
   "entry": "plugin.py",
   "settings": "settings.json"

@@ -1,0 +1,6 @@
+{
+  "id": "gta_clear_session",
+  "name": "GTA Clear Session",
+  "entry": "plugin.py",
+  "settings": "settings.json"
+}

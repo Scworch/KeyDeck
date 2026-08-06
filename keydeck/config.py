@@ -1,3 +1,4 @@
+#KeyDeck/keydeck/config.py
 from __future__ import annotations
 
 import json
@@ -76,6 +77,35 @@ class AppSettings:
 
     def button_pixels(self) -> int:
         return BUTTON_SIZE_MAP[self.button_size]
+
+    def normalize_action_ids(
+        self,
+        valid_action_ids: set[str],
+        aliases: dict[str, str] | None = None,
+    ) -> bool:
+        alias_map = aliases or {}
+        changed = False
+        normalized: list[str | None] = []
+
+        for action_id in self.slot_actions:
+            if not action_id:
+                normalized.append(None)
+                continue
+            if action_id in valid_action_ids:
+                normalized.append(action_id)
+                continue
+
+            alias_target = alias_map.get(action_id)
+            if alias_target and alias_target in valid_action_ids:
+                normalized.append(alias_target)
+            else:
+                normalized.append(None)
+            changed = True
+
+        if changed:
+            self.slot_actions = normalized
+            self._normalize_slots()
+        return changed
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -1,0 +1,1181 @@
+[2026-08-06 10:46:22] [INFO] =========================================
+[2026-08-06 10:46:22] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 10:46:22] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 10:46:22] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 10:46:22] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 10:46:22] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 10:46:22] [INFO] Successfully connected to Wave Link WebSocket!
+[2026-08-06 10:46:22] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 10:47:15] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:47:15] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:47:15] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:15] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:47:15] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:47:15] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:15] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:47:15] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:47:15] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:16] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:47:16] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:47:16] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:16] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:47:16] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:47:16] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:16] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:47:16] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:47:16] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:47:35] [INFO] Wave Link Plugin stopped.
+[2026-08-06 10:47:35] [INFO] =========================================
+[2026-08-06 10:48:19] [INFO] =========================================
+[2026-08-06 10:48:19] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 10:48:19] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 10:48:19] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 10:48:19] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 10:48:19] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 10:48:19] [INFO] Successfully connected to Wave Link WebSocket!
+[2026-08-06 10:48:19] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 10:49:03] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:03] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:04] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:07] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:07] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:07] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:07] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:07] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:07] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:07] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:07] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:07] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:08] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:08] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:08] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:08] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 10:49:09] [INFO] MATCH: Increase Hotkey Pressed (name='f13', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:09] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:49:09] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:49:09] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:49:11] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:11] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:12] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:13] [DEBUG] [KEY PRESS] name='1', vk=None, scan_code=2
+[2026-08-06 10:49:13] [DEBUG] [KEY PRESS] name='3', vk=None, scan_code=4
+[2026-08-06 10:49:13] [DEBUG] [KEY PRESS] name='-', vk=None, scan_code=12
+[2026-08-06 10:49:14] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:14] [DEBUG] [KEY PRESS] name='2', vk=None, scan_code=3
+[2026-08-06 10:49:14] [DEBUG] [KEY PRESS] name='4', vk=None, scan_code=5
+[2026-08-06 10:49:15] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 10:49:26] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:26] [DEBUG] [KEY PRESS] name='w', vk=None, scan_code=17
+[2026-08-06 10:49:27] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:27] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15
+[2026-08-06 10:49:33] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:33] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 10:49:37] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:38] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:39] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:41] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:41] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:43] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:43] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:49:44] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 10:49:44] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:44] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:44] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:45] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:46] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:49:47] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:48] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:49] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:50] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='right shift', vk=None, scan_code=54
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='{', vk=None, scan_code=26
+[2026-08-06 10:49:51] [DEBUG] [KEY PRESS] name='}', vk=None, scan_code=27
+[2026-08-06 10:49:52] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:49:53] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:49:53] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:49:53] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:53] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:53] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 10:49:54] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:55] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 10:49:55] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:49:55] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:49:55] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:49:56] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:56] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 10:49:56] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:56] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name=';', vk=None, scan_code=39
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 10:49:57] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:49:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name=';', vk=None, scan_code=39
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:49:59] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:50:00] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:50:01] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 10:50:02] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 10:50:03] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 10:50:04] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 10:50:05] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:50:06] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='[', vk=None, scan_code=26
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:50:07] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:50:10] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 10:50:16] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:50:16] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:50:17] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:50:17] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:50:17] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:50:17] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:50:17] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:50:17] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:50:17] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:50:17] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:50:17] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:50:17] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:50:17] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 10:50:17] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', vk=None)
+[2026-08-06 10:50:17] [ERROR] Wave Link API Error: Failed to query inputs from Wave Link: RPC Error (-32601): Method not found. The method does not exist / is not available.
+[2026-08-06 10:58:42] [INFO] =========================================
+[2026-08-06 10:58:42] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 10:58:42] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 10:58:42] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 10:58:42] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 10:58:42] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 10:58:42] [INFO] Connected to Wave Link!
+[2026-08-06 10:58:42] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 10:58:47] [DEBUG] [KEY PRESS] name='up', vk=None, scan_code=72
+[2026-08-06 10:58:47] [DEBUG] [KEY PRESS] name='up', vk=None, scan_code=72
+[2026-08-06 10:58:47] [DEBUG] [KEY PRESS] name='up', vk=None, scan_code=72
+[2026-08-06 10:58:48] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:59:55] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 10:59:55] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:59:55] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:55] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 10:59:55] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:59:56] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:57] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 10:59:58] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:59:59] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 10:59:59] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 10:59:59] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 10:59:59] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='right shift', vk=None, scan_code=54
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='+', vk=None, scan_code=13
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 11:01:14] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:15] [DEBUG] [KEY PRESS] name='<', vk=None, scan_code=51
+[2026-08-06 11:01:16] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:01:16] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:16] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:16] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 11:01:16] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 11:01:17] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 11:01:17] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 11:01:17] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 11:01:29] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:29] [DEBUG] [KEY PRESS] name='tab', vk=None, scan_code=15
+[2026-08-06 11:01:46] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:50] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:01:51] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:52] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:01:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 11:02:22] [DEBUG] [KEY PRESS] name='delete', vk=None, scan_code=83
+[2026-08-06 11:02:23] [DEBUG] [KEY PRESS] name='delete', vk=None, scan_code=83
+[2026-08-06 11:03:26] [DEBUG] [KEY PRESS] name='delete', vk=None, scan_code=83
+[2026-08-06 11:03:33] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:34] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 11:03:34] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:35] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:36] [DEBUG] [KEY PRESS] name='w', vk=None, scan_code=17
+[2026-08-06 11:03:36] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:36] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:36] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 11:03:36] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 11:03:37] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 11:03:37] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:38] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:38] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 11:03:38] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 11:03:39] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:39] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:39] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 11:03:39] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 11:03:39] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 11:03:40] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 11:03:40] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:40] [DEBUG] [KEY PRESS] name='w', vk=None, scan_code=17
+[2026-08-06 11:03:40] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 11:03:41] [DEBUG] [KEY PRESS] name='0', vk=None, scan_code=11
+[2026-08-06 11:03:41] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:41] [DEBUG] [KEY PRESS] name='-', vk=None, scan_code=12
+[2026-08-06 11:03:41] [DEBUG] [KEY PRESS] name='1', vk=None, scan_code=2
+[2026-08-06 11:03:41] [DEBUG] [KEY PRESS] name='9', vk=None, scan_code=10
+[2026-08-06 11:03:42] [DEBUG] [KEY PRESS] name='9', vk=None, scan_code=10
+[2026-08-06 11:03:42] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:42] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 11:03:42] [DEBUG] [KEY PRESS] name='0', vk=None, scan_code=11
+[2026-08-06 11:03:42] [DEBUG] [KEY PRESS] name='0', vk=None, scan_code=11
+[2026-08-06 11:03:43] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:43] [DEBUG] [KEY PRESS] name='0', vk=None, scan_code=11
+[2026-08-06 11:03:43] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 11:03:43] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 11:03:44] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 11:03:44] [DEBUG] [KEY PRESS] name='4', vk=None, scan_code=5
+[2026-08-06 11:03:59] [INFO] Wave Link Plugin stopped.
+[2026-08-06 11:03:59] [INFO] =========================================
+[2026-08-06 21:12:43] [INFO] =========================================
+[2026-08-06 21:12:43] [INFO] Starting Wave Link Control Plugin...
+[2026-08-06 21:12:43] [INFO] Log file location: C:\надо\python\KeyDeck\plugins\WaveLink\wavelink_debug.log
+[2026-08-06 21:12:43] [INFO] Configuration loaded: channel='Music', step=5%
+[2026-08-06 21:12:43] [INFO] Increase triggers: name='f13', vk=124
+[2026-08-06 21:12:43] [INFO] Decrease triggers: name='f14', vk=125
+[2026-08-06 21:12:43] [WARNING] Wave Link WebSocket connection info: 'WaveLinkClient' object has no attribute 'connect'
+[2026-08-06 21:12:43] [INFO] Low-level keyboard hook active and listening for key events.
+[2026-08-06 21:13:01] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 21:13:01] [INFO] MATCH: Increase Hotkey Pressed (name='f13', scan_code=100)
+[2026-08-06 21:13:01] [INFO] -> Increased 'Music' volume by +5% -> New Level: 55%
+[2026-08-06 21:13:02] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 21:13:02] [INFO] MATCH: Increase Hotkey Pressed (name='f13', scan_code=100)
+[2026-08-06 21:13:02] [INFO] -> Increased 'Music' volume by +5% -> New Level: 60%
+[2026-08-06 21:13:02] [DEBUG] [KEY PRESS] name='f13', vk=None, scan_code=100
+[2026-08-06 21:13:02] [INFO] MATCH: Increase Hotkey Pressed (name='f13', scan_code=100)
+[2026-08-06 21:13:02] [INFO] -> Increased 'Music' volume by +5% -> New Level: 65%
+[2026-08-06 21:13:02] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 21:13:02] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', scan_code=101)
+[2026-08-06 21:13:02] [INFO] -> Decreased 'Music' volume by -5% -> New Level: 60%
+[2026-08-06 21:13:02] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 21:13:02] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', scan_code=101)
+[2026-08-06 21:13:02] [INFO] -> Decreased 'Music' volume by -5% -> New Level: 55%
+[2026-08-06 21:13:03] [DEBUG] [KEY PRESS] name='f14', vk=None, scan_code=101
+[2026-08-06 21:13:03] [INFO] MATCH: Decrease Hotkey Pressed (name='f14', scan_code=101)
+[2026-08-06 21:13:03] [INFO] -> Decreased 'Music' volume by -5% -> New Level: 50%
+[2026-08-06 21:13:22] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:13:23] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:24] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:13:24] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:13:24] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:24] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:13:25] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:13:26] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:27] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:13:27] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:13:27] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:13:27] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:13:28] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:29] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:13:29] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:13:29] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:13:29] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:13:29] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:13:30] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:13:31] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:13:31] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:13:31] [DEBUG] [KEY PRESS] name='right shift', vk=None, scan_code=54
+[2026-08-06 21:13:31] [DEBUG] [KEY PRESS] name='?', vk=None, scan_code=53
+[2026-08-06 21:13:32] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 21:14:13] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:14] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:15] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:16] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:17] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:18] [DEBUG] [KEY PRESS] name='w', vk=None, scan_code=17
+[2026-08-06 21:14:19] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:19] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:14:19] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:14:19] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:19] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:20] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:21] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:22] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='.', vk=None, scan_code=52
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='right shift', vk=None, scan_code=54
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='?', vk=None, scan_code=53
+[2026-08-06 21:14:23] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name=';', vk=None, scan_code=39
+[2026-08-06 21:14:24] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:25] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:26] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:27] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:27] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:27] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:27] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:28] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='.', vk=None, scan_code=52
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='o', vk=None, scan_code=24
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:14:29] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:14:30] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:14:31] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:31] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:31] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:31] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:31] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:32] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:33] [DEBUG] [KEY PRESS] name=';', vk=None, scan_code=39
+[2026-08-06 21:14:33] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:33] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:14:33] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:34] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:35] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:36] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:37] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:14:38] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:14:39] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:40] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:41] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:14:41] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:14:41] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:14:41] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:14:41] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:14:44] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 21:15:49] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:15:50] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:15:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:15:53] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:15:53] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:15:54] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:15:54] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:15:55] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:15:55] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:15:55] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:15:55] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:15:56] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:15:57] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:15:58] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:15:59] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:15:59] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:15:59] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:15:59] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:15:59] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:16:00] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:16:01] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:16:01] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:01] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:16:01] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:16:02] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:16:02] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:02] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:16:02] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:03] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:16:03] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:03] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:16:03] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:03] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:16:04] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:16:04] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:05] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:16:05] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:16:05] [DEBUG] [KEY PRESS] name='/', vk=None, scan_code=53
+[2026-08-06 21:16:06] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:16:06] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:16:07] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:16:08] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:16:09] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:16:09] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:16:09] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:10] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:10] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:10] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:10] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:11] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:16:12] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:16:13] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:16:14] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:14] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:16:14] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:16:14] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:16:15] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:16:15] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:16:15] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:16:15] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:16:15] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:16:17] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 21:17:01] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:17:02] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:02] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:02] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:02] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:02] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name=''', vk=None, scan_code=40
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:03] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:04] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:17:04] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:04] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name=''', vk=None, scan_code=40
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:05] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:17:06] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:17:07] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:07] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:07] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:07] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:07] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:08] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:17:09] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:10] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:11] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:12] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:12] [DEBUG] [KEY PRESS] name='[', vk=None, scan_code=26
+[2026-08-06 21:17:12] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:12] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:17:13] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:13] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:13] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='l', vk=None, scan_code=38
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:14] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:15] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='[', vk=None, scan_code=26
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:16] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='[', vk=None, scan_code=26
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:17] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:17:18] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:19] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:20] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:17:21] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:21] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:21] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:21] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:17:22] [DEBUG] [KEY PRESS] name=';', vk=None, scan_code=39
+[2026-08-06 21:17:22] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:22] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:22] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:17:22] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='.', vk=None, scan_code=52
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:17:23] [DEBUG] [KEY PRESS] name='.', vk=None, scan_code=52
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:24] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='z', vk=None, scan_code=44
+[2026-08-06 21:17:25] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:26] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:27] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:27] [DEBUG] [KEY PRESS] name='v', vk=None, scan_code=47
+[2026-08-06 21:17:27] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:27] [DEBUG] [KEY PRESS] name='enter', vk=None, scan_code=28
+[2026-08-06 21:17:41] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:42] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:42] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:42] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:43] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:43] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:43] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:43] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:43] [DEBUG] [KEY PRESS] name='p', vk=None, scan_code=25
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='e', vk=None, scan_code=18
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:44] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='m', vk=None, scan_code=50
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:45] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:46] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:46] [DEBUG] [KEY PRESS] name='r', vk=None, scan_code=19
+[2026-08-06 21:17:46] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:47] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:47] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:47] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='j', vk=None, scan_code=36
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:48] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:49] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:49] [DEBUG] [KEY PRESS] name='n', vk=None, scan_code=49
+[2026-08-06 21:17:49] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:49] [DEBUG] [KEY PRESS] name='h', vk=None, scan_code=35
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='a', vk=None, scan_code=30
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='q', vk=None, scan_code=16
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:50] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:51] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:17:51] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:51] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:51] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:52] [DEBUG] [KEY PRESS] name='ctrl', vk=None, scan_code=29
+[2026-08-06 21:17:52] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:52] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:52] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='backspace', vk=None, scan_code=14
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:53] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:54] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:54] [DEBUG] [KEY PRESS] name='x', vk=None, scan_code=45
+[2026-08-06 21:17:54] [DEBUG] [KEY PRESS] name='/', vk=None, scan_code=53
+[2026-08-06 21:17:54] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:55] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:55] [DEBUG] [KEY PRESS] name='i', vk=None, scan_code=23
+[2026-08-06 21:17:55] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:55] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:17:55] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:17:56] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:57] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:58] [DEBUG] [KEY PRESS] name='d', vk=None, scan_code=32
+[2026-08-06 21:17:58] [DEBUG] [KEY PRESS] name='c', vk=None, scan_code=46
+[2026-08-06 21:17:58] [DEBUG] [KEY PRESS] name='t', vk=None, scan_code=20
+[2026-08-06 21:17:58] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:17:58] [DEBUG] [KEY PRESS] name='g', vk=None, scan_code=34
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='k', vk=None, scan_code=37
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='f', vk=None, scan_code=33
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='u', vk=None, scan_code=22
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='b', vk=None, scan_code=48
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='y', vk=None, scan_code=21
+[2026-08-06 21:17:59] [DEBUG] [KEY PRESS] name='s', vk=None, scan_code=31
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name=',', vk=None, scan_code=51
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name='space', vk=None, scan_code=57
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name='alt', vk=None, scan_code=56
+[2026-08-06 21:18:00] [DEBUG] [KEY PRESS] name='shift', vk=None, scan_code=42

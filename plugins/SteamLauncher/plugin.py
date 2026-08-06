@@ -13,6 +13,7 @@ from typing import Callable
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
@@ -405,6 +406,7 @@ class Plugin(PluginBase):
         dialog = SettingsDialog(
             profiles=profiles,
             icon_resolver=self._resolve_game_icon,
+            parent=QApplication.activeModalWidget() or QApplication.activeWindow(),
         )
         if not dialog.exec():
             return
@@ -427,11 +429,6 @@ class Plugin(PluginBase):
 
         self._profiles = updated
         self._save_profiles()
-        QMessageBox.information(
-            None,
-            "SteamLauncher",
-            "Saved. Reload plugins or restart KeyDeck to refresh actions list.",
-        )
 
     def _launch(self, profile: LaunchProfile) -> None:
         steam_id = profile.steam_id.strip()

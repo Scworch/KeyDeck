@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import QEvent, QSize, QTimer, Qt, Signal
-from PySide6.QtGui import QGuiApplication, QIcon
+from PySide6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QGridLayout,
@@ -66,9 +66,13 @@ class DeckWindow(QWidget):
     def _build_header(self) -> None:
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(8)
+        header_layout.setAlignment(Qt.AlignVCenter)
 
         title = QLabel("KeyDeck", self)
         title.setStyleSheet("font-weight: bold; font-size: 13px;")
+        title.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        title.setFixedHeight(32)
 
         self.settings_button = QToolButton(self)
         self.settings_button.setToolTip("Settings")
@@ -76,30 +80,28 @@ class DeckWindow(QWidget):
         self.settings_button.clicked.connect(self.settings_requested.emit)
         icon_path = (self._project_root() / "icons" / "settings.svg")
         if icon_path.exists():
-            self.settings_button.setIcon(QIcon(str(icon_path)))
-            self.settings_button.setIconSize(QSize(16, 16))
+            self.settings_button.setIcon(self._load_white_icon(icon_path, 24))
+            self.settings_button.setIconSize(QSize(24, 24))
         else:
             self.settings_button.setText("CFG")
+        self.settings_button.setFixedSize(32, 32)
         self.settings_button.setStyleSheet(
             """
             QToolButton {
-                background-color: #2a2a2a;
-                border: 1px solid #3a3a3a;
-                border-radius: 12px;
+                background: transparent;
+                border: none;
                 color: #e6e6e6;
-                padding: 4px;
-                min-width: 28px;
-                min-height: 28px;
+                padding: 0px;
             }
             QToolButton:hover {
-                background-color: #3a3a3a;
+                background: transparent;
             }
             """
         )
 
-        header_layout.addWidget(title)
+        header_layout.addWidget(title, 0, Qt.AlignVCenter)
         header_layout.addStretch(1)
-        header_layout.addWidget(self.settings_button)
+        header_layout.addWidget(self.settings_button, 0, Qt.AlignVCenter)
         self.main_layout.addLayout(header_layout)
 
     def _build_grid_container(self) -> None:
@@ -109,7 +111,7 @@ class DeckWindow(QWidget):
         self.grid_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.addWidget(self.grid_widget)
 
-    def rebuild_grid(self) -> None:
+    def rebuild_grid(self, resize_window: bool = True) -> None:
         metrics = self._compute_grid_metrics()
 
         while self.grid_layout.count():
@@ -156,21 +158,22 @@ class DeckWindow(QWidget):
         self.grid_layout.activate()
         self.main_layout.activate()
 
-        target_size = self.sizeHint()
-        self.setMinimumSize(0, 0)
-        self.setMaximumSize(16777215, 16777215)
-        self.resize(target_size)
-        self.setFixedSize(target_size)
-
-        self.move_to_corner()
+        if resize_window:
+            QApplication.processEvents()
+            target_size = self.sizeHint()
+            self.setMinimumSize(0, 0)
+            self.setMaximumSize(16777215, 16777215)
+            self.resize(target_size)
+            self.setFixedSize(target_size)
+            self.move_to_corner()
 
     def update_actions(self, actions: list[Action]) -> None:
         self.actions = actions
-        self.rebuild_grid()
+        self.rebuild_grid(resize_window=False)
 
     def apply_settings(self, settings: AppSettings) -> None:
         self.settings = settings
-        self.rebuild_grid()
+        self.rebuild_grid(resize_window=True)
 
     def _on_button_clicked(self, index: int) -> None:
         self.action_requested.emit(self._action_map.get(index))
@@ -257,3 +260,19 @@ class DeckWindow(QWidget):
         from pathlib import Path
 
         return Path(__file__).resolve().parents[2]
+
+    def _load_white_icon(self, icon_path, size: int) -> QIcon:
+        base = QIcon(str(icon_path))
+        pix = base.pixmap(size, size)
+        if pix.isNull():
+            return base
+
+        white = QPixmap(pix.size())
+        white.fill(Qt.transparent)
+
+        painter = QPainter(white)
+        painter.drawPixmap(0, 0, pix)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.fillRect(white.rect(), QColor("#ffffff"))
+        painter.end()
+        return QIcon(white)

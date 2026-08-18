@@ -41,24 +41,31 @@ class SwitcherSettings:
     @classmethod
     def from_dict(cls, data: dict) -> "SwitcherSettings":
         defaults = cls()
+        def _int(value: object, fallback: int) -> int:
+            try:
+                return int(value)
+            except (TypeError, ValueError, OverflowError):
+                return fallback
+
+        raw_executables = data.get("auto_switch_executables", ["cs2.exe"])
+        if not isinstance(raw_executables, list):
+            raw_executables = ["cs2.exe"]
         return cls(
             button_original_title=str(
                 data.get("button_original_title", defaults.button_original_title)
             ),
             button_target_title=str(data.get("button_target_title", defaults.button_target_title)),
-            target_width=int(data.get("target_width", defaults.target_width)),
-            target_height=int(data.get("target_height", defaults.target_height)),
+            target_width=_int(data.get("target_width", defaults.target_width), defaults.target_width),
+            target_height=_int(data.get("target_height", defaults.target_height), defaults.target_height),
             auto_switch_executables=[
                 str(item).strip()
-                for item in data.get("auto_switch_executables", ["cs2.exe"])
+                for item in raw_executables
                 if str(item).strip()
             ],
-            original_width=int(data.get("original_width", defaults.original_width)),
-            original_height=int(data.get("original_height", defaults.original_height)),
-            original_frequency=int(data.get("original_frequency", defaults.original_frequency)),
-            original_bits_per_pixel=int(
-                data.get("original_bits_per_pixel", defaults.original_bits_per_pixel)
-            ),
+            original_width=_int(data.get("original_width", defaults.original_width), defaults.original_width),
+            original_height=_int(data.get("original_height", defaults.original_height), defaults.original_height),
+            original_frequency=_int(data.get("original_frequency", defaults.original_frequency), defaults.original_frequency),
+            original_bits_per_pixel=_int(data.get("original_bits_per_pixel", defaults.original_bits_per_pixel), defaults.original_bits_per_pixel),
         ).clamp()
 
     def clamp(self) -> "SwitcherSettings":

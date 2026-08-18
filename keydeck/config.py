@@ -52,9 +52,18 @@ class AppSettings:
                 else:
                     slot_actions.append(None)
 
+        def _positive_int(value: Any, fallback: int) -> int:
+            try:
+                # Avoid accepting fractional values silently (e.g. 2.5 -> 2).
+                if isinstance(value, float) and not value.is_integer():
+                    raise ValueError
+                return int(value)
+            except (TypeError, ValueError, OverflowError):
+                return fallback
+
         settings = cls(
-            rows=int(data.get("rows", defaults.rows)),
-            columns=int(data.get("columns", defaults.columns)),
+            rows=_positive_int(data.get("rows", defaults.rows), defaults.rows),
+            columns=_positive_int(data.get("columns", defaults.columns), defaults.columns),
             button_size=button_size,
             slot_actions=slot_actions,
         )

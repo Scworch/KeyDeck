@@ -44,13 +44,25 @@ class LaunchProfile:
 
     @classmethod
     def from_dict(cls, data: dict, idx: int) -> "LaunchProfile":
+        def _float(value: object, fallback: float) -> float:
+            try:
+                return float(value)
+            except (TypeError, ValueError, OverflowError):
+                return fallback
+
+        def _int(value: object, fallback: int) -> int:
+            try:
+                return int(value)
+            except (TypeError, ValueError, OverflowError):
+                return fallback
+
         pid = str(data.get("profile_id", "")).strip() or f"profile_{idx + 1}"
         title = str(data.get("title", "")).strip() or f"Steam Launch {idx + 1}"
         steam_id = str(data.get("steam_id", "")).strip()
         launch_args = str(data.get("launch_args", "")).strip()
-        icon_zoom = float(data.get("icon_zoom", 1.0))
-        icon_offset_x = int(data.get("icon_offset_x", 0))
-        icon_offset_y = int(data.get("icon_offset_y", 0))
+        icon_zoom = _float(data.get("icon_zoom", 1.0), 1.0)
+        icon_offset_x = _int(data.get("icon_offset_x", 0), 0)
+        icon_offset_y = _int(data.get("icon_offset_y", 0), 0)
         return cls(
             profile_id=pid,
             title=title,

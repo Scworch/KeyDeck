@@ -21,14 +21,18 @@ class PluginManager:
         self.errors: list[str] = []
 
     def load_plugins(self) -> None:
+        self.errors = []
         self.stop_plugins()
         self.plugins = []
         self.script_actions = []
-        self.errors = []
 
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
         for plugin_dir in sorted(self.plugins_dir.iterdir()):
             if not plugin_dir.is_dir():
+                continue
+            # The plugins directory may contain caches, user-created folders,
+            # or documentation. Only a manifest identifies a loadable plugin.
+            if not (plugin_dir / "manifest.json").is_file():
                 continue
 
             try:
@@ -90,7 +94,10 @@ class PluginManager:
         manifest = self._load_manifest(manifest_path)
 
         entry_name = str(manifest.get("entry", "plugin.py")).strip() or "plugin.py"
+        plugin_root = plugin_dir.resolve()
         entry_file = (plugin_dir / entry_name).resolve()
+        if entry_file != plugin_root and plugin_root not in entry_file.parents:
+            raise ValueError("Entry file must be inside the plugin directory")
         if not entry_file.exists():
             raise FileNotFoundError(f"Entry file not found: {entry_name}")
 
@@ -98,7 +105,10 @@ class PluginManager:
         plugin_name = str(manifest.get("name", plugin_dir.name))
         settings_file = self._resolve_settings_file(plugin_dir, manifest)
 
+        if plugin_root != settings_file.parent and plugin_root not in settings_file.parents:
+            raise ValueError("Settings file must be inside the plugin directory")
         if not settings_file.exists():
+            settings_file.parent.mkdir(parents=True, exist_ok=True)
             settings_file.write_text("{}\n", encoding="utf-8")
 
         return PluginContext(
@@ -153,16 +163,23 @@ class PluginManager:
 
     def _construct_plugin(self, plugin_class: type, context: PluginContext) -> PluginBase:
         try:
-            return plugin_class(context=context)
-        except TypeError:
-            pass
-
-        try:
-            params = list(inspect.signature(plugin_class).parameters.values())
-            if params and params[0].name == "context":
-                return plugin_class(context)
+            signature = inspect.signature(plugin_class)
         except (TypeError, ValueError):
-            pass
+            signature = None
+
+        if signature is not None:
+            params = list(signature.parameters.values())
+            context_param = signature.parameters.get("context")
+            if context_param is not None and context_param.kind in (
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                inspect.Parameter.KEYWORD_ONLY,
+            ):
+                return plugin_class(context=context)
+            if params and params[0].kind in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            ) and params[0].name == "context":
+                return plugin_class(context)
 
         plugin = plugin_class()
         if getattr(plugin, "context", None) is None:

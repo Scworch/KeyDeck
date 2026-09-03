@@ -1,11 +1,9 @@
 import os
 import sys
 import time
-import logging
 import warnings
 
 warnings.filterwarnings("ignore")
-logger = logging.getLogger("WaveLinkAPI")
 
 plugin_lib_dir = os.path.join(os.path.dirname(__file__), "lib")
 if str(plugin_lib_dir) not in sys.path:
@@ -44,9 +42,8 @@ try:
 
     client_type = elgato_asm.GetType("_9J8nHIpasSlsUaPNBCNB19VDI1i")
     HAS_DLL = True
-    logger.info("Successfully loaded Streamer.bot Elgato DLL engine!")
-except Exception as e:
-    logger.warning(f"Could not load Streamer.bot Elgato DLL: {e}")
+except Exception:
+    pass
 
 
 class WaveLinkError(Exception):
@@ -92,12 +89,10 @@ class WaveLinkClient:
             deadline = time.monotonic() + 3.0
             while not self.sb_client.IsConnected and time.monotonic() < deadline:
                 time.sleep(0.05)
-            if self.sb_client.IsConnected:
-                logger.info("Streamer.bot WaveLinkClient connected to Elgato Wave Link!")
-            else:
+            if not self.sb_client.IsConnected:
                 raise WaveLinkConnectionError("Wave Link connection timed out")
-        except Exception as e:
-            logger.error(f"Error initializing Streamer.bot DLL engine: {e}")
+        except Exception:
+            pass
 
     def connect(self) -> None:
         """Connect to Wave Link, safely reusing an existing connection."""
@@ -118,8 +113,8 @@ class WaveLinkClient:
                 if method is not None:
                     method.Invoke(client, None)
                     break
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("Wave Link cleanup method %s failed: %s", method_name, exc)
+            except Exception:
+                pass
 
     def is_connected(self) -> bool:
         if self.sb_client:
@@ -145,7 +140,6 @@ class WaveLinkClient:
                 raise WaveLinkError("Wave Link volume method was not found")
             self._await(set_vol_method.Invoke(self.sb_client, [full_name, target_mixer, System.Int32(target_vol), System.Boolean(False)]))
             self._volumes[(channel_name.casefold(), mix.casefold())] = target_vol
-            logger.info("Wave Link: set '%s' (%s mix) to %d%%", full_name, mix, target_vol)
         except WaveLinkError:
             raise
         except Exception as exc:

@@ -18,8 +18,8 @@ REGISTRY_PATH = (
     r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
 )
 VALUE_NAME = "_User_Global_VAL_SuperResolution"
-VALID_MODES = ("off", "auto")
-MODE_TO_VALUE = {"off": 0, "auto": 5}
+VALID_MODES = ("off", "1", "2", "3", "4", "auto")
+MODE_TO_VALUE = {"off": 0, "1": 1, "2": 2, "3": 3, "4": 4, "auto": 5}
 
 
 class Plugin(PluginBase):
@@ -59,25 +59,35 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("NVIDIA RTX Video Super Resolution settings")
         dialog.setModal(True)
+        dialog.setMinimumWidth(420)
+        dialog.setMinimumHeight(180)
 
-        form = QFormLayout(dialog)
+        main_layout = QVBoxLayout(dialog)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(10)
+
+        form = QFormLayout()
+        form.setHorizontalSpacing(14)
+        form.setVerticalSpacing(8)
+
         mode_1_box = QComboBox(dialog)
-        mode_1_box.addItems(VALID_MODES)
+        mode_1_box.setMinimumWidth(150)
+        mode_1_box.addItems(list(VALID_MODES))
         mode_1_box.setCurrentText(self.mode_1)
         form.addRow("Mode 1", mode_1_box)
 
         mode_2_box = QComboBox(dialog)
-        mode_2_box.addItems(VALID_MODES)
+        mode_2_box.setMinimumWidth(150)
+        mode_2_box.addItems(list(VALID_MODES))
         mode_2_box.setCurrentText(self.mode_2)
         form.addRow("Mode 2", mode_2_box)
+
+        main_layout.addLayout(form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
-
-        layout = QVBoxLayout(dialog)
-        layout.addLayout(form)
-        layout.addWidget(buttons)
+        main_layout.addWidget(buttons)
 
         if not dialog.exec():
             return
@@ -124,11 +134,15 @@ class Plugin(PluginBase):
         value = self._read_registry_value()
         if value is None:
             return None
-        if value == 0:
-            return "off"
-        if value in (1, 2, 3, 4, 5):
-            return "auto"
-        return None
+        mode_map = {
+            0: "off",
+            1: "1",
+            2: "2",
+            3: "3",
+            4: "4",
+            5: "auto",
+        }
+        return mode_map.get(value)
 
     def _read_registry_value(self) -> int | None:
         try:

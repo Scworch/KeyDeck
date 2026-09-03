@@ -1,0 +1,7 @@
+{
+  "id": "NvidiaRtxVideoSuperResolution",
+  "name": "NVIDIA RTX Video Super Resolution",
+  "version": "0.1.0",
+  "entry": "plugin.py",
+  "settings": "settings.json"
+}

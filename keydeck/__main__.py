@@ -57,4 +57,6 @@ if __name__ == "__main__":
                 ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000080)
         except Exception:
             pass
+    from keydeck.app import main
+
     raise SystemExit(main())

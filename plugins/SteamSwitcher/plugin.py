@@ -61,10 +61,14 @@ class Plugin(PluginBase):
             )
         ]
 
+    def _fallback_avatar_path(self) -> str | None:
+        fallback = PLUGIN_DIR / "blank_avatar.jpg"
+        return str(fallback) if fallback.exists() else None
+
     def _get_action_icon(self, slot: int, current_settings: dict) -> str | None:
         account_name = current_settings.get("account_name")
         if not account_name:
-            return None
+            return self._fallback_avatar_path()
             
         try:
             steam_path = steam_switch.get_steam_path()
@@ -74,10 +78,10 @@ class Plugin(PluginBase):
                 rec_name = str(record.get("AccountName", "")).strip()
                 if rec_name == account_name:
                     avatar_path = steam_switch.avatar_path_for_user(steam_path, steam_id, record)
-                    return avatar_path
+                    return avatar_path or self._fallback_avatar_path()
         except Exception:
-            pass
-        return None
+            return self._fallback_avatar_path()
+        return self._fallback_avatar_path()
 
     def _open_action_settings(self, slot: int, current_settings: dict) -> dict | None:
         try:
@@ -114,7 +118,10 @@ class Plugin(PluginBase):
             if not account_name:
                 continue
             persona_name = str(record.get("PersonaName", "")).strip()
-            avatar_path = steam_switch.avatar_path_for_user(steam_path, steam_id, record)
+            avatar_path = (
+                steam_switch.avatar_path_for_user(steam_path, steam_id, record)
+                or self._fallback_avatar_path()
+            )
 
             title = account_name
             if not title and persona_name:

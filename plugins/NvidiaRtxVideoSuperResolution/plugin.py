@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 import winreg
 
@@ -20,6 +21,15 @@ REGISTRY_PATH = (
 VALUE_NAME = "_User_Global_VAL_SuperResolution"
 VALID_MODES = ("off", "1", "2", "3", "4", "auto")
 MODE_TO_VALUE = {"off": 0, "1": 1, "2": 2, "3": 3, "4": 4, "auto": 5}
+MODE_ICON_FILES = {
+    "off": "OFF.png",
+    "1": "1.png",
+    "2": "2.png",
+    "3": "3.png",
+    "4": "4.png",
+    "auto": "AUTO.png",
+}
+ICON_DIR = Path(__file__).resolve().parent / "icons"
 
 
 class Plugin(PluginBase):
@@ -48,8 +58,17 @@ class Plugin(PluginBase):
                 callback=self.toggle_mode,
                 plugin_id=self.plugin_id,
                 settings_callback=self.open_settings,
+                action_icon_callback=self._get_action_icon,
             )
         ]
+
+    def _get_action_icon(self, slot: int, current_settings: dict) -> str | None:
+        mode = self._read_mode_name()
+        filename = MODE_ICON_FILES.get(mode or "")
+        if filename is None:
+            return None
+        icon_path = ICON_DIR / filename
+        return str(icon_path) if icon_path.exists() else None
 
     def open_settings(self) -> None:
         if self.context is None:

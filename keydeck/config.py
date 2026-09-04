@@ -56,7 +56,6 @@ class AppSettings:
                 else:
                     slot_actions.append(None)
 
-<<<<<<< HEAD
         def _positive_int(value: Any, fallback: int) -> int:
             try:
                 # Avoid accepting fractional values silently (e.g. 2.5 -> 2).

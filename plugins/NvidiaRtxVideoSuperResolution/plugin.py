@@ -167,7 +167,7 @@ class Plugin(PluginBase):
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
                 value, reg_type = winreg.QueryValueEx(key, VALUE_NAME)
-                if reg_type not in (winreg.REG_DWORD, winreg.REG_BINARY, winreg.REG_SZ):
+                if reg_type != winreg.REG_DWORD:
                     return None
                 return int(value)
         except (FileNotFoundError, OSError, TypeError, ValueError):
@@ -181,9 +181,15 @@ class Plugin(PluginBase):
                 winreg.HKEY_LOCAL_MACHINE,
                 REGISTRY_PATH,
                 0,
-                winreg.KEY_READ | winreg.KEY_WRITE,
+                winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE,
             ) as key:
                 winreg.SetValueEx(key, VALUE_NAME, 0, winreg.REG_DWORD, requested_value)
+                actual_value, actual_type = winreg.QueryValueEx(key, VALUE_NAME)
+                if actual_type != winreg.REG_DWORD or int(actual_value) != requested_value:
+                    raise RuntimeError(
+                        f"NVIDIA registry verification failed: expected DWORD {requested_value}, "
+                        f"got type {actual_type} value {actual_value!r}."
+                    )
         except OSError as exc:  # pragma: no cover - runtime OS access path
             raise RuntimeError(
                 "Unable to update NVIDIA RTX Video Super Resolution setting. "

@@ -11,7 +11,6 @@ plugin_dir = Path(__file__).resolve().parent
 if str(plugin_dir) not in sys.path:
     sys.path.insert(0, str(plugin_dir))
 
-import keyboard
 from keydeck.plugin_api import PluginBase, PluginContext
 from wavelink_api import WaveLinkClient, WaveLinkError
 
@@ -19,6 +18,8 @@ from wavelink_api import WaveLinkClient, WaveLinkError
 WH_KEYBOARD_LL = 13
 VK_VOLUME_DOWN = 0xAE
 VK_VOLUME_UP = 0xAF
+VK_F13 = 0x7C
+VK_F14 = 0x7D
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
 WM_SYSKEYDOWN = 0x0104
@@ -140,16 +141,6 @@ class Plugin(PluginBase):
         except Exception:
             pass
 
-        try:
-            # add_hotkey gives exactly one callback per F13/F14 press and avoids
-            # matching unrelated keys by scan code.
-            self._hotkeys = [
-                keyboard.add_hotkey("f13", lambda: self._handle_volume_change(channel_name, step, True)),
-                keyboard.add_hotkey("f14", lambda: self._handle_volume_change(channel_name, step, False)),
-            ]
-        except Exception:
-            pass
-
         self._volume_worker = threading.Thread(
             target=self._volume_worker_loop,
             args=(channel_name, step),
@@ -222,11 +213,11 @@ class Plugin(PluginBase):
             WM_SYSKEYUP,
         ):
             event = ctypes.cast(l_param, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
-            if event.vkCode == VK_VOLUME_UP:
+            if event.vkCode in (VK_VOLUME_UP, VK_F13):
                 if w_param in (WM_KEYDOWN, WM_SYSKEYDOWN):
                     self._volume_events.put(True)
                 return 1
-            if event.vkCode == VK_VOLUME_DOWN:
+            if event.vkCode in (VK_VOLUME_DOWN, VK_F14):
                 if w_param in (WM_KEYDOWN, WM_SYSKEYDOWN):
                     self._volume_events.put(False)
                 return 1
@@ -254,13 +245,6 @@ class Plugin(PluginBase):
 
     def stop(self) -> None:
         """Stops keyboard hooks and closes Wave Link connection."""
-        for hotkey in self._hotkeys:
-            try:
-                keyboard.remove_hotkey(hotkey)
-            except Exception:
-                pass
-        self._hotkeys = []
-
         self._volume_hook_stop.set()
         if user32 is not None and self._volume_hook_thread_id:
             user32.PostThreadMessageW(self._volume_hook_thread_id, WM_QUIT, 0, 0)

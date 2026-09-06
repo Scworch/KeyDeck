@@ -123,9 +123,10 @@ class SquircleButton(QPushButton):
                 ))
             elif self._avatar_mode == "contain":
                 # .ico game icons should stay centered without aggressive crop.
+                extra = 16 if "\\NvidiaRtxVideoSuperResolution\\icons\\" in icon_path else 6
                 scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * 0.94 * self._avatar_zoom),
-                    int(rect.height() * 0.94 * self._avatar_zoom),
+                    int((rect.width() + extra) * self._avatar_zoom),
+                    int((rect.height() + extra) * self._avatar_zoom),
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation,
                 ))

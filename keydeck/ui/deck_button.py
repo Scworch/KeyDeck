@@ -59,7 +59,7 @@ class SquircleButton(QPushButton):
             if icon_mode == "centered":
                 self._avatar_mode = "centered"
             else:
-                self._avatar_mode = "contain" if icon_path.lower().endswith(".ico") else "contain"
+                self._avatar_mode = "contain"
         self.update()
 
     def enterEvent(self, event) -> None:  # noqa: N802
@@ -124,8 +124,8 @@ class SquircleButton(QPushButton):
             elif self._avatar_mode == "contain":
                 # .ico game icons should stay centered without aggressive crop.
                 scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * 0.9 * self._avatar_zoom),
-                    int(rect.height() * 0.9 * self._avatar_zoom),
+                    int(rect.width() * 0.94 * self._avatar_zoom),
+                    int(rect.height() * 0.94 * self._avatar_zoom),
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation,
                 ))

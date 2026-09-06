@@ -1017,7 +1017,10 @@ class SettingsDialog(QDialog):
             widget.swap_requested.connect(self._swap_slots)
             widget.settings_requested.connect(self._open_slot_config)
             widget.clear_requested.connect(self._clear_slot)
-            widget.set_action(self._action_for_slot(slot))
+            widget.set_action(
+                self._action_for_slot(slot),
+                self._slot_settings.get(str(slot), {}),
+            )
             row_idx = slot // cols
             col_idx = slot % cols
             self.preview_grid.addWidget(widget, row_idx, col_idx, alignment=Qt.AlignCenter)

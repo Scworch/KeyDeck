@@ -36,8 +36,15 @@ def main() -> int:
         if args.dry_run:
             result = {"dry_run": True, "would_set_quality": int(args.quality)}
         else:
-            set_vsr(args.quality)
-            result = {"written": False}
+            mode = {str(value): name for name, value in {
+                "off": 0,
+                "1": 1,
+                "2": 2,
+                "3": 3,
+                "4": 4,
+                "auto": 5,
+            }.items()}[args.quality]
+            result = {"written": set_vsr(mode)}
 
     result["messagebus"] = write_support_status()
     print(json.dumps(result, ensure_ascii=False, indent=2))

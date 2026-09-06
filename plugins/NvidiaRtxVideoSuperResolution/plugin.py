@@ -73,8 +73,6 @@ class Plugin(PluginBase):
                 settings_callback=self.open_settings,
                 action_icon_callback=self._get_action_icon,
                 icon_path=str(ICON_DIR / "OFF.png"),
-                icon_mode="contain",
-                icon_zoom=0.9,
             )
         ]
 

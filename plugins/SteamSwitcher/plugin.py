@@ -58,7 +58,6 @@ class Plugin(PluginBase):
                 action_settings_callback=self._open_action_settings,
                 action_icon_callback=self._get_action_icon,
                 icon_path=self._fallback_avatar_path(),
-                icon_mode="cover",
                 aliases=aliases,
             )
         ]

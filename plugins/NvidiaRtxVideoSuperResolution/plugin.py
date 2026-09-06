@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
-import winreg
+import sys
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -14,6 +14,12 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+
+PLUGIN_DIR = Path(__file__).resolve().parent
+if str(PLUGIN_DIR) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_DIR))
+
+from vsr import read_vsr, set_vsr
 
 REGISTRY_PATH = (
     r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
@@ -165,33 +171,14 @@ class Plugin(PluginBase):
 
     def _read_registry_value(self) -> int | None:
         try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
-                value, reg_type = winreg.QueryValueEx(key, VALUE_NAME)
-                if reg_type != winreg.REG_DWORD:
-                    return None
-                return int(value)
-        except (FileNotFoundError, OSError, TypeError, ValueError):
+            state = read_vsr()
+            value = state.get("value")
+            if not isinstance(value, dict) or value.get("type") != 4:
+                return None
+            return int(value.get("value"))
+        except (FileNotFoundError, OSError, TypeError, ValueError, RuntimeError):
             return None
 
     def _apply_mode(self, mode: str) -> None:
         mode_name = self._normalize_mode(mode, "off")
-        requested_value = MODE_TO_VALUE.get(mode_name, 0)
-        try:
-            with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                REGISTRY_PATH,
-                0,
-                winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE,
-            ) as key:
-                winreg.SetValueEx(key, VALUE_NAME, 0, winreg.REG_DWORD, requested_value)
-                actual_value, actual_type = winreg.QueryValueEx(key, VALUE_NAME)
-                if actual_type != winreg.REG_DWORD or int(actual_value) != requested_value:
-                    raise RuntimeError(
-                        f"NVIDIA registry verification failed: expected DWORD {requested_value}, "
-                        f"got type {actual_type} value {actual_value!r}."
-                    )
-        except OSError as exc:  # pragma: no cover - runtime OS access path
-            raise RuntimeError(
-                "Unable to update NVIDIA RTX Video Super Resolution setting. "
-                "Run KeyDeck with administrator privileges and confirm the registry key exists."
-            ) from exc
+        set_vsr(mode_name)

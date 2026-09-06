@@ -122,11 +122,11 @@ class SquircleButton(QPushButton):
                     Qt.SmoothTransformation,
                 ))
             elif self._avatar_mode == "contain":
-                # Keep every plugin icon inside the tile with one consistent scale.
+                # Fill the tile by the image's wider dimension; the tile clip trims overflow.
                 scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * 0.9 * self._avatar_zoom),
-                    int(rect.height() * 0.9 * self._avatar_zoom),
-                    Qt.KeepAspectRatio,
+                    int(rect.width() * self._avatar_zoom),
+                    int(rect.height() * self._avatar_zoom),
+                    Qt.KeepAspectRatioByExpanding,
                     Qt.SmoothTransformation,
                 ))
             else:

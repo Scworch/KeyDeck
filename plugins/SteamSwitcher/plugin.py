@@ -57,6 +57,8 @@ class Plugin(PluginBase):
                 settings_callback=self.open_settings,
                 action_settings_callback=self._open_action_settings,
                 action_icon_callback=self._get_action_icon,
+                icon_path=self._fallback_avatar_path(),
+                icon_mode="cover",
                 aliases=aliases,
             )
         ]
@@ -123,9 +125,7 @@ class Plugin(PluginBase):
                 or self._fallback_avatar_path()
             )
 
-            title = account_name
-            if not title and persona_name:
-                title = persona_name
+            title = account_name or persona_name or "Unknown Steam account"
                 
             item = QListWidgetItem(title)
             item.setData(Qt.UserRole, account_name)

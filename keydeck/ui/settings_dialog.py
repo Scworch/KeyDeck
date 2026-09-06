@@ -201,8 +201,10 @@ class ActionPickerDialog(QDialog):
             elif "ZapretToggler" in pid or "Zapret" in pid:
                 emoji = "🌐"
 
-            text = f"{emoji}  {action.title}  ({action.plugin_id})"
+            text = f"{action.title}  ({action.plugin_id})"
             item = QListWidgetItem(text)
+            if action.icon_path:
+                item.setIcon(QIcon(action.icon_path))
             item.setData(Qt.UserRole, action.action_id)
             self.list_widget.addItem(item)
             if current_action_id == action.action_id:
@@ -269,7 +271,7 @@ class PreviewSquircleButton(SquircleButton):
             w = float(self.width())
             h = float(self.height())
             rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
-            radius = max(8.0, float(min(w, h) * 0.28))
+            radius = max(8.0, float(min(w, h) * 0.18))
             path = QPainterPath()
             path.addRoundedRect(rect, radius, radius)
 

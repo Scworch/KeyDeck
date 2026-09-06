@@ -9,7 +9,7 @@ class SquircleButton(QPushButton):
     def __init__(self, size: int, parent: QWidget | None = None) -> None:
         super().__init__("", parent)
         self._size = max(32, int(size))
-        self._radius = max(10, int(self._size * 0.28))
+        self._radius = max(8, int(self._size * 0.18))
         self._avatar = QPixmap()
         self._avatar_mode = "cover"
         self._avatar_zoom = 1.0
@@ -59,7 +59,7 @@ class SquircleButton(QPushButton):
             if icon_mode == "centered":
                 self._avatar_mode = "centered"
             else:
-                self._avatar_mode = "contain" if icon_path.lower().endswith(".ico") else "cover"
+                self._avatar_mode = "contain" if icon_path.lower().endswith(".ico") else "contain"
         self.update()
 
     def enterEvent(self, event) -> None:  # noqa: N802
@@ -91,7 +91,7 @@ class SquircleButton(QPushButton):
         h = float(self.height())
         rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
 
-        radius = max(8.0, float(min(w, h) * 0.28))
+        radius = max(8.0, float(min(w, h) * 0.18))
         path = QPainterPath()
         path.addRoundedRect(rect, radius, radius)
         painter.setClipPath(path)

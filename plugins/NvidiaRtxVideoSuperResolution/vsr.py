@@ -23,6 +23,7 @@ def read_vsr() -> dict[str, Any]:
 
 def set_vsr(*args: Any, **kwargs: Any) -> None:
     raise RuntimeError(
-        "VSR write is not implemented safely: NVIDIA exposes this as an internal "
-        "MessageBus command, not a DLL export, and the named-pipe protocol is unverified."
+        "VSR write is not implemented safely: the NVIDIA App command is confirmed, "
+        "but its standalone payload transport and the NvCpl VSR wire schema still "
+        "require verification."
     )

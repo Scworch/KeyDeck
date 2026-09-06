@@ -9,7 +9,17 @@ from typing import Any
 
 NVIDIA_APP_DIR = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "NVIDIA Corporation" / "NVIDIA App"
 DISPLAY_PLUGIN = NVIDIA_APP_DIR / "CEF" / "plugins" / "Base" / "NvCplDisplayPlugin.dll"
+NVCPL_API = NVIDIA_APP_DIR / "NvCpl" / "NvCpl.dll"
 MESSAGEBUS_CONFIG = NVIDIA_APP_DIR / "MessageBus" / "messagebus.conf"
+NVCPL_EXPORTS = (
+    "NvCplApiIsUxdServiceRunning",
+    "NvCplApiInit",
+    "NvCplApiGetSetting",
+    "NvCplApiSetSetting",
+    "NvCplApiExecute",
+    "NvCplApiManageState",
+    "NvCplApiClose",
+)
 COMMANDS = (
     "GetSuperResolutionInfo",
     "GetSuperResolutionCurrentStatus",
@@ -90,6 +100,7 @@ def detect() -> dict[str, Any]:
     result: dict[str, Any] = {
         "nvidia_app_dir": str(NVIDIA_APP_DIR),
         "display_plugin": str(DISPLAY_PLUGIN),
+        "nv_cpl_api": str(NVCPL_API),
         "messagebus_config": str(MESSAGEBUS_CONFIG),
         "processes": _processes(),
         "files": {},
@@ -102,7 +113,7 @@ def detect() -> dict[str, Any]:
             "implemented here because its named-pipe protocol is not verified."
         ),
     }
-    for path in (DISPLAY_PLUGIN, MESSAGEBUS_CONFIG):
+    for path in (DISPLAY_PLUGIN, NVCPL_API, MESSAGEBUS_CONFIG):
         if path.exists():
             stat = path.stat()
             item: dict[str, Any] = {
@@ -113,6 +124,16 @@ def detect() -> dict[str, Any]:
             if path == DISPLAY_PLUGIN:
                 try:
                     item["exports"] = _named_exports(path)
+                except (OSError, ValueError) as exc:
+                    item["export_error"] = f"{type(exc).__name__}: {exc}"
+            elif path == NVCPL_API:
+                try:
+                    exports = _named_exports(path)
+                    item["exports"] = exports
+                    item["required_exports"] = list(NVCPL_EXPORTS)
+                    item["missing_required_exports"] = [
+                        name for name in NVCPL_EXPORTS if name not in exports
+                    ]
                 except (OSError, ValueError) as exc:
                     item["export_error"] = f"{type(exc).__name__}: {exc}"
             else:

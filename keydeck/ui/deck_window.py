@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from PySide6.QtCore import (
     QAbstractAnimation,
@@ -62,16 +63,15 @@ class DeckWindow(QWidget):
         self._prewarm_scheduled = False
 
         self.setWindowTitle("KeyDeck")
+        self.setObjectName("DeckWindow")
         self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_ShowWithoutActivating, False)
 
         self.setStyleSheet(
             """
-            QWidget {
-                background-color: #121214;
-                color: #f0f0f0;
+            QWidget#DeckWindow {
+                background-color: #262626;
                 border-radius: 14px;
-                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             }
             """
         )
@@ -98,13 +98,16 @@ class DeckWindow(QWidget):
         title.setFixedHeight(24)
 
         self.settings_button = QToolButton(self)
+        self.settings_button.setObjectName("SettingsButton")
         self.settings_button.setToolTip("Settings")
         self.settings_button.setCursor(Qt.PointingHandCursor)
+        self.settings_button.setAutoRaise(True)
+        self.settings_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.settings_button.clicked.connect(self.settings_requested.emit)
         icon_path = (self._project_root() / "icons" / "settings.svg")
         if icon_path.exists():
-            self.settings_button.setIcon(self._load_white_icon(icon_path, 24))
-            self.settings_button.setIconSize(QSize(24, 24))
+            self.settings_button.setIcon(self._load_white_icon(icon_path, 16))
+            self.settings_button.setIconSize(QSize(16, 16))
         else:
             self.settings_button.setText("CFG")
         self.settings_button.setFixedSize(24, 24)
@@ -115,6 +118,10 @@ class DeckWindow(QWidget):
                 border: none;
                 color: #e6e6e6;
                 padding: 0px;
+                min-height: 24px;
+                min-width: 24px;
+                max-height: 24px;
+                max-width: 24px;
             }
             QToolButton:hover {
                 background: transparent;
@@ -171,9 +178,10 @@ class DeckWindow(QWidget):
             dot.setText("●")
             color = "#3b82f6" if index == self.current_page_index else "#52525b"
             dot.setStyleSheet(
-                f"QToolButton {{ border: none; background: transparent; color: {color}; "
-                "font-size: 11px; padding: 0; }"
-                f"QToolButton:hover {{ color: {'#60a5fa' if index == self.current_page_index else '#a1a1aa'}; }}"
+                f"QToolButton {{ border: 1px solid #444444; border-radius: 2px; "
+                f"background-color: #343434; color: {color}; font-size: 11px; padding: 0; }}"
+                f"QToolButton:hover {{ background-color: #414141; "
+                f"color: {'#60a5fa' if index == self.current_page_index else '#a1a1aa'}; }}"
             )
             dot.clicked.connect(lambda checked=False, target=index: self.set_page(target))
             self.page_indicator_layout.addWidget(dot)
@@ -291,14 +299,20 @@ class DeckWindow(QWidget):
             title = action.title if action else f"Button {index + 1}"
             icon_path = action.icon_path if action else None
             slot_settings = page.slot_settings.get(str(index), {})
+            slot_overrides = page.slot_overrides.get(str(index), {})
 
             if action and action.action_icon_callback:
                 dyn_icon = action.action_icon_callback(index, slot_settings)
                 if dyn_icon:
                     icon_path = dyn_icon
+            custom_icon_path = slot_overrides.get("icon_path")
+            if custom_icon_path and Path(custom_icon_path).is_file():
+                icon_path = custom_icon_path
 
             if action and "account_name" in slot_settings:
                 title = slot_settings["account_name"]
+            if slot_overrides.get("title"):
+                title = slot_overrides["title"]
 
             button_widget = DeckButtonWidget(
                 index=index,

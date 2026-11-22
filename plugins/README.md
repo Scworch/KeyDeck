@@ -31,12 +31,10 @@ CFG integration:
 - In KeyDeck CFG window you can bind each slot to a specific action (`action_id`).
 - `Plugin settings` button opens settings for plugin of the selected slot action.
 
-WQS:
-- `WQS/` provides a fullscreen Windows Quick Start launcher with configurable
-  presets, commands, network toggles, device battery commands, and click zones.
-- Open the WQS settings editor and bind `WQS.launcher` to a KeyDeck slot.
+WQS is an unfinished experimental plugin and is not included in public release builds.
 
 Wave Link Control:
+- Choose the Wave Link API in plugin settings: Wave Link 3.5 is selected by default; choose 2.0.6 for the legacy API. The 3.5 adapter talks directly to Wave Link's local WebSocket API; the legacy adapter continues using the bundled Streamer.bot libraries, so downloading Streamer.bot is not required.
 - Configure the Wave Link channel, volume step, and the two increase/decrease hotkeys in the plugin settings.
 - Wheel calibration captures keyboard/media-key events only. The PRO X 2 volume wheel emits HID Consumer Control reports, which require a device filter driver to suppress before Windows changes its volume.
 - Configured hotkeys are intercepted globally while KeyDeck is running. Debug mode writes recognized volume-key events and Wave Link errors to `%LOCALAPPDATA%\KeyDeck\plugins\WaveLink\wavelink-debug.log` in release builds (or `plugins/WaveLink/wavelink-debug.log` from source); unrelated keystrokes are not recorded.

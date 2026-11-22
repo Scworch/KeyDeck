@@ -16,12 +16,18 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QComboBox,
-    QCheckBox,
     QLabel,
     QMessageBox,
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import (
+    SettingsSection,
+    ToggleSwitch,
+    add_dialog_header,
+    style_dialog_buttons,
+)
+from keydeck.ui.theme import size_dialog
 
 def get_zapret_dir() -> Optional[Path]:
     # Find matching directory in C:\
@@ -96,38 +102,59 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("ZapretToggler Settings")
         self.setModal(True)
-        self.setMinimumWidth(400)
+        size_dialog(self, 680, 520, 520, 400)
 
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(24, 22, 24, 20)
+        main_layout.setSpacing(18)
+        add_dialog_header(
+            main_layout,
+            "Zapret Toggler",
+            "Select the script KeyDeck should use and whether it runs on startup.",
+            self,
+        )
 
+        script_section = SettingsSection(
+            "Installation and script",
+            "Zapret must be installed before a startup script can be selected.",
+            self,
+        )
         form = QFormLayout()
-        main_layout.addLayout(form)
+        form.setContentsMargins(0, 0, 0, 0)
+        script_section.content_layout.addLayout(form)
 
-        # Directory status
         dir_label = QLabel()
         if zapret_dir:
             dir_label.setText(f"Found: {zapret_dir}")
-            dir_label.setStyleSheet("color: #4CAF50;") # Green
+            dir_label.setObjectName("StatusBadge")
         else:
-            dir_label.setText("Not found! Please ensure C:\\zapret-discord-youtube-* exists.")
-            dir_label.setStyleSheet("color: #F44336;") # Red
-        form.addRow("Zapret Directory:", dir_label)
+            dir_label.setText("Not found. Check the expected Zapret installation folder.")
+            dir_label.setObjectName("WarningText")
+        dir_label.setWordWrap(True)
+        form.addRow("Zapret folder", dir_label)
 
-        # Bat file selection
         self.bat_combo = QComboBox(self)
         if zapret_dir:
             bat_files = get_bat_files(zapret_dir)
             self.bat_combo.addItems(bat_files)
             if current_bat in bat_files:
                 self.bat_combo.setCurrentText(current_bat)
-        form.addRow("Select script:", self.bat_combo)
+        form.addRow("Script", self.bat_combo)
 
-        # Autorun checkbox
-        self.autorun_check = QCheckBox("Run script automatically when KeyDeck starts", self)
+        startup_section = SettingsSection("Startup behavior", parent=self)
+        self.autorun_check = ToggleSwitch(
+            "Run the selected script when KeyDeck starts",
+            self,
+        )
         self.autorun_check.setChecked(autorun)
-        form.addRow("Autorun:", self.autorun_check)
+        startup_section.content_layout.addWidget(self.autorun_check)
+
+        main_layout.addWidget(script_section)
+        main_layout.addWidget(startup_section)
+        main_layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)

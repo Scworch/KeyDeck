@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import SettingsSection, add_dialog_header, style_dialog_buttons
+from keydeck.ui.theme import size_dialog
 
 PLUGIN_DIR = Path(__file__).resolve().parent
 if str(PLUGIN_DIR) not in sys.path:
@@ -155,39 +157,77 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("ResolutionSwitcher settings")
         dialog.setModal(True)
+        size_dialog(dialog, 820, 700, 640, 560)
         layout = QVBoxLayout(dialog)
-        form = QFormLayout()
-        layout.addLayout(form)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(18)
+        add_dialog_header(
+            layout,
+            "Resolution Switcher",
+            "Set the display mode for this button and optional game-specific switching.",
+            dialog,
+        )
+
+        labels_section = SettingsSection(
+            "Button labels",
+            "These titles are shown when the original or target resolution is active.",
+            dialog,
+        )
+        labels_form = QFormLayout()
+        labels_form.setContentsMargins(0, 0, 0, 0)
+        labels_section.content_layout.addLayout(labels_form)
 
         title_original = QLineEdit(self.settings.button_original_title, dialog)
-        form.addRow("Title when switching to original", title_original)
+        labels_form.addRow("Original mode", title_original)
 
         title_target = QLineEdit(self.settings.button_target_title, dialog)
-        form.addRow("Title when switching to target", title_target)
+        labels_form.addRow("Target mode", title_target)
 
+        resolution_section = SettingsSection(
+            "Target resolution",
+            "The current display mode is shown below.",
+            dialog,
+        )
+        resolution_form = QFormLayout()
+        resolution_form.setContentsMargins(0, 0, 0, 0)
+        resolution_section.content_layout.addLayout(resolution_form)
         width_spin = QSpinBox(dialog)
         width_spin.setRange(640, 16384)
         width_spin.setValue(self.settings.target_width)
-        form.addRow("Target width", width_spin)
+        resolution_form.addRow("Width", width_spin)
 
         height_spin = QSpinBox(dialog)
         height_spin.setRange(480, 16384)
         height_spin.setValue(self.settings.target_height)
-        form.addRow("Target height", height_spin)
-
-        auto_switch_edit = QLineEdit(", ".join(self.settings.auto_switch_executables), dialog)
-        auto_switch_edit.setPlaceholderText("cs2.exe, game.exe")
-        form.addRow("Auto switch for .exe", auto_switch_edit)
+        resolution_form.addRow("Height", height_spin)
 
         current = resolution_switch.current_mode()
-        current_info = QLineEdit(
-            f"{current.width}x{current.height} @ {current.frequency}Hz",
+        current_info = QLabel(
+            f"{current.width}×{current.height} at {current.frequency} Hz",
             dialog,
         )
-        current_info.setReadOnly(True)
-        form.addRow("Current mode", current_info)
+        current_info.setObjectName("Muted")
+        resolution_form.addRow("Current mode", current_info)
+
+        auto_section = SettingsSection(
+            "Automatic switching",
+            "Switch to the target mode while one of these applications is running.",
+            dialog,
+        )
+        auto_switch_edit = QLineEdit(", ".join(self.settings.auto_switch_executables), dialog)
+        auto_switch_edit.setPlaceholderText("cs2.exe, game.exe")
+        auto_form = QFormLayout()
+        auto_form.setContentsMargins(0, 0, 0, 0)
+        auto_form.addRow("Executable names", auto_switch_edit)
+        auto_section.content_layout.addLayout(auto_form)
+
+        layout.addWidget(labels_section)
+        layout.addWidget(resolution_section)
+        layout.addWidget(auto_section)
+        layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)

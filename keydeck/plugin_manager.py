@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import importlib.util
 import inspect
 import json
@@ -9,9 +10,16 @@ import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+
+
+@dataclass(frozen=True)
+class PluginInfo:
+    plugin_id: str
+    plugin_name: str
 
 
 class PluginManager:
@@ -27,12 +35,31 @@ class PluginManager:
         self.plugins: list[PluginBase] = []
         self.script_actions: list[Action] = []
         self.errors: list[str] = []
+        self.disabled_plugin_ids: frozenset[str] = frozenset()
+        self._plugin_module_names: set[str] = set()
+        self._initial_sys_path = list(sys.path)
 
-    def load_plugins(self) -> None:
+    def discover_plugins(self) -> list[PluginInfo]:
+        discovered: list[PluginInfo] = []
+        if not self.plugins_dir.is_dir():
+            return discovered
+        for plugin_dir in sorted(self.plugins_dir.iterdir()):
+            manifest_path = plugin_dir / "manifest.json"
+            if not plugin_dir.is_dir() or not manifest_path.is_file():
+                continue
+            try:
+                manifest = self._load_manifest(manifest_path)
+            except (OSError, TypeError, ValueError):
+                continue
+            plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
+            plugin_name = str(manifest.get("name", plugin_dir.name)).strip() or plugin_dir.name
+            discovered.append(PluginInfo(plugin_id, plugin_name))
+        return discovered
+
+    def load_plugins(self, disabled_plugin_ids: set[str] | None = None) -> None:
         self.errors = []
-        self.stop_plugins()
-        self.plugins = []
-        self.script_actions = []
+        self.unload_plugins()
+        self.disabled_plugin_ids = frozenset(disabled_plugin_ids or ())
 
         self.plugins_dir.mkdir(parents=True, exist_ok=True)
         for plugin_dir in sorted(self.plugins_dir.iterdir()):
@@ -44,7 +71,11 @@ class PluginManager:
                 continue
 
             try:
-                context = self._build_context(plugin_dir)
+                manifest = self._load_manifest(plugin_dir / "manifest.json")
+                plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
+                if plugin_id in self.disabled_plugin_ids:
+                    continue
+                context = self._build_context(plugin_dir, manifest)
                 plugin = self._load_plugin_instance(context)
                 if plugin is not None:
                     self.plugins.append(plugin)
@@ -62,6 +93,57 @@ class PluginManager:
                 self.errors.append(
                     f"Start failed for {getattr(plugin, 'plugin_name', plugin.__class__.__name__)}: {exc}"
                 )
+
+    def unload_plugins(self) -> None:
+        self.stop_plugins()
+        self.plugins.clear()
+        self.script_actions.clear()
+        self._unload_plugin_modules()
+
+    def _unload_plugin_modules(self) -> None:
+        module_names = tuple(self._plugin_module_names)
+        plugin_dirs = (
+            tuple(
+                path.resolve()
+                for path in self.plugins_dir.iterdir()
+                if path.is_dir() and (path / "manifest.json").is_file()
+            )
+            if self.plugins_dir.is_dir()
+            else ()
+        )
+        for name in tuple(sys.modules):
+            module = sys.modules[name]
+            module_path = getattr(module, "__file__", None)
+            module_is_plugin_code = False
+            if module_path:
+                try:
+                    resolved_module_path = Path(module_path).resolve()
+                    module_is_plugin_code = any(
+                        resolved_module_path == plugin_dir
+                        or plugin_dir in resolved_module_path.parents
+                        for plugin_dir in plugin_dirs
+                    )
+                except (OSError, RuntimeError, ValueError):
+                    module_is_plugin_code = False
+            if module_is_plugin_code or any(
+                name == root or name.startswith(f"{root}.")
+                for root in module_names
+            ):
+                sys.modules.pop(name, None)
+        self._plugin_module_names.clear()
+        plugins_root = self.plugins_dir.resolve()
+        initial_paths = set(self._initial_sys_path)
+        for entry in tuple(sys.path):
+            if entry in initial_paths:
+                continue
+            try:
+                resolved_entry = Path(entry or Path.cwd()).resolve()
+            except (OSError, RuntimeError, ValueError):
+                continue
+            if resolved_entry == plugins_root or plugins_root in resolved_entry.parents:
+                while entry in sys.path:
+                    sys.path.remove(entry)
+        gc.collect()
 
     def stop_plugins(self) -> None:
         for plugin in self.plugins:
@@ -97,10 +179,13 @@ class PluginManager:
         actions.extend(self.script_actions)
         return actions
 
-    def _build_context(self, plugin_dir: Path) -> PluginContext:
-        manifest_path = plugin_dir / "manifest.json"
-        manifest = self._load_manifest(manifest_path)
-
+    def _build_context(
+        self,
+        plugin_dir: Path,
+        manifest: dict | None = None,
+    ) -> PluginContext:
+        if manifest is None:
+            manifest = self._load_manifest(plugin_dir / "manifest.json")
         entry_name = str(manifest.get("entry", "plugin.py")).strip() or "plugin.py"
         plugin_root = plugin_dir.resolve()
         entry_file = (plugin_dir / entry_name).resolve()
@@ -182,20 +267,23 @@ class PluginManager:
 
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
+        self._plugin_module_names.add(module_name)
         try:
             spec.loader.exec_module(module)
+            plugin_class = getattr(module, "Plugin", None)
+            if plugin_class is None:
+                sys.modules.pop(module_name, None)
+                self._plugin_module_names.discard(module_name)
+                return None
+
+            plugin = self._construct_plugin(plugin_class, context)
+            if not isinstance(plugin, PluginBase):
+                raise TypeError("Plugin class must inherit PluginBase")
+            return plugin
         except Exception:
             sys.modules.pop(module_name, None)
+            self._plugin_module_names.discard(module_name)
             raise
-
-        plugin_class = getattr(module, "Plugin", None)
-        if plugin_class is None:
-            return None
-
-        plugin = self._construct_plugin(plugin_class, context)
-        if not isinstance(plugin, PluginBase):
-            raise TypeError("Plugin class must inherit PluginBase")
-        return plugin
 
     def _construct_plugin(self, plugin_class: type, context: PluginContext) -> PluginBase:
         try:

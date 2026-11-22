@@ -9,7 +9,6 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
-    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -17,6 +16,13 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import (
+    SettingsSection,
+    ToggleSwitch,
+    add_dialog_header,
+    style_dialog_buttons,
+)
+from keydeck.ui.theme import size_dialog
 
 PLUGIN_DIR = Path(__file__).resolve().parent
 if str(PLUGIN_DIR) not in sys.path:
@@ -92,16 +98,28 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("NVIDIA RTX Video Super Resolution settings")
         dialog.setModal(True)
-        dialog.setMinimumWidth(420)
-        dialog.setMinimumHeight(180)
+        size_dialog(dialog, 700, 500, 540, 380)
 
         main_layout = QVBoxLayout(dialog)
-        main_layout.setContentsMargins(12, 12, 12, 12)
-        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(24, 22, 24, 20)
+        main_layout.setSpacing(18)
+        add_dialog_header(
+            main_layout,
+            "NVIDIA Video Super Resolution",
+            "Choose the two VSR modes used by the assigned button.",
+            dialog,
+        )
 
+        modes_section = SettingsSection(
+            "VSR modes",
+            "KeyDeck switches between these modes each time the button is pressed.",
+            dialog,
+        )
         form = QFormLayout()
+        form.setContentsMargins(0, 0, 0, 0)
         form.setHorizontalSpacing(14)
-        form.setVerticalSpacing(8)
+        form.setVerticalSpacing(12)
+        modes_section.content_layout.addLayout(form)
 
         mode_1_box = QComboBox(dialog)
         mode_1_box.setMinimumWidth(150)
@@ -115,13 +133,17 @@ class Plugin(PluginBase):
         mode_2_box.setCurrentText(self.mode_2)
         form.addRow("Mode 2", mode_2_box)
 
-        disable_games = QCheckBox("Automatically disable VSR while a game is running", dialog)
+        behavior_section = SettingsSection("Game behavior", parent=dialog)
+        disable_games = ToggleSwitch("Disable VSR while a game is running", dialog)
         disable_games.setChecked(self.disable_in_games)
-        form.addRow(disable_games)
+        behavior_section.content_layout.addWidget(disable_games)
 
-        main_layout.addLayout(form)
+        main_layout.addWidget(modes_section)
+        main_layout.addWidget(behavior_section)
+        main_layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         main_layout.addWidget(buttons)

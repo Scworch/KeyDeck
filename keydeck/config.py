@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import shutil
 import sys
@@ -46,6 +47,7 @@ class DeckPage:
     columns: int = 4
     slot_actions: list[str | None] = field(default_factory=list)
     slot_settings: dict[str, dict[str, Any]] = field(default_factory=dict)
+    slot_overrides: dict[str, dict[str, str]] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], index: int) -> "DeckPage":
@@ -62,6 +64,7 @@ class DeckPage:
             if isinstance(raw_settings, dict)
             else {}
         )
+        slot_overrides = _normalize_slot_overrides(data.get("slot_overrides", {}))
         page_id = data.get("page_id")
         return cls(
             page_id=page_id.strip() if isinstance(page_id, str) and page_id.strip() else uuid4().hex,
@@ -70,6 +73,7 @@ class DeckPage:
             columns=columns,
             slot_actions=actions,
             slot_settings=slot_settings,
+            slot_overrides=slot_overrides,
         ).clamp()
 
     def clamp(self) -> "DeckPage":
@@ -82,7 +86,25 @@ class DeckPage:
             for key, value in self.slot_settings.items()
             if str(key).isdigit() and isinstance(value, dict)
         }
+        self.slot_overrides = _normalize_slot_overrides(self.slot_overrides)
         return self
+
+
+def _normalize_slot_overrides(raw: Any) -> dict[str, dict[str, str]]:
+    if not isinstance(raw, dict):
+        return {}
+    normalized: dict[str, dict[str, str]] = {}
+    for key, value in raw.items():
+        if not str(key).isdigit() or not isinstance(value, dict):
+            continue
+        override: dict[str, str] = {}
+        for field_name in ("title", "icon_path"):
+            field_value = value.get(field_name)
+            if isinstance(field_value, str) and field_value.strip():
+                override[field_name] = field_value.strip()
+        if override:
+            normalized[str(key)] = override
+    return normalized
 
 
 def _positive_int(value: Any, fallback: int) -> int:
@@ -108,6 +130,9 @@ class AppSettings:
     infinite_scroll: bool = False
     auto_start: bool = True
     high_priority: bool = True
+    run_as_admin: bool = False
+    last_update_check: float = 0.0
+    disabled_plugins: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AppSettings":
@@ -141,6 +166,21 @@ class AppSettings:
         slot_hotkeys = data.get("slot_hotkeys", {})
         if not isinstance(slot_hotkeys, dict):
             slot_hotkeys = {}
+
+        try:
+            last_update_check = float(data.get("last_update_check", 0.0))
+            if not math.isfinite(last_update_check):
+                last_update_check = 0.0
+        except (TypeError, ValueError, OverflowError):
+            last_update_check = 0.0
+        raw_disabled_plugins = data.get("disabled_plugins", [])
+        disabled_plugins = list(
+            dict.fromkeys(
+                item.strip()
+                for item in raw_disabled_plugins
+                if isinstance(item, str) and item.strip()
+            )
+        ) if isinstance(raw_disabled_plugins, list) else []
 
         rows = _positive_int(data.get("rows", defaults.rows), defaults.rows)
         columns = _positive_int(data.get("columns", defaults.columns), defaults.columns)
@@ -186,12 +226,22 @@ class AppSettings:
             infinite_scroll=bool(data.get("infinite_scroll", False)),
             auto_start=bool(data.get("auto_start", defaults.auto_start)),
             high_priority=bool(data.get("high_priority", defaults.high_priority)),
+            run_as_admin=bool(data.get("run_as_admin", defaults.run_as_admin)),
+            last_update_check=last_update_check,
+            disabled_plugins=disabled_plugins,
         )
         return settings.clamp()
 
     def clamp(self) -> "AppSettings":
         if self.button_size not in BUTTON_SIZE_MAP:
             self.button_size = "medium"
+        self.disabled_plugins = list(
+            dict.fromkeys(
+                plugin_id.strip()
+                for plugin_id in self.disabled_plugins
+                if isinstance(plugin_id, str) and plugin_id.strip()
+            )
+        )
         if not self.pages:
             self.pages = [
                 DeckPage(
@@ -223,13 +273,22 @@ class AppSettings:
         self,
         valid_action_ids: set[str],
         aliases: dict[str, str] | None = None,
+        preserved_plugin_ids: set[str] | None = None,
     ) -> bool:
         alias_map = aliases or {}
+        preserved_prefixes = tuple(
+            f"{plugin_id}."
+            for plugin_id in (preserved_plugin_ids or set())
+        )
         changed = False
         for page in self.pages:
             normalized: list[str | None] = []
             for action_id in page.slot_actions:
-                if not action_id or action_id in valid_action_ids:
+                if (
+                    not action_id
+                    or action_id in valid_action_ids
+                    or action_id.startswith(preserved_prefixes)
+                ):
                     normalized.append(action_id)
                     continue
                 normalized.append(alias_map.get(action_id))

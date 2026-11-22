@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import SettingsSection, add_dialog_header, style_dialog_buttons
+from keydeck.ui.theme import size_dialog
 
 PLUGIN_DIR = Path(__file__).resolve().parent
 if str(PLUGIN_DIR) not in sys.path:
@@ -71,26 +73,51 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("GTA Clear Session settings")
         dialog.setModal(True)
+        size_dialog(dialog, 780, 560, 600, 440)
 
         layout = QVBoxLayout(dialog)
-        form = QFormLayout()
-        layout.addLayout(form)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(18)
+        add_dialog_header(
+            layout,
+            "GTA Clear Session",
+            "Choose the action label and process handling behavior.",
+            dialog,
+        )
+
+        title_section = SettingsSection("Button", "This title appears on the assigned deck button.", dialog)
+        title_form = QFormLayout()
+        title_form.setContentsMargins(0, 0, 0, 0)
+        title_section.content_layout.addLayout(title_form)
 
         title_edit = QLineEdit(self.settings.action_title, dialog)
-        form.addRow("Button title", title_edit)
+        title_form.addRow("Button title", title_edit)
 
+        process_section = SettingsSection(
+            "Process handling",
+            "Select the process names KeyDeck should handle and the suspend duration.",
+            dialog,
+        )
+        process_form = QFormLayout()
+        process_form.setContentsMargins(0, 0, 0, 0)
+        process_section.content_layout.addLayout(process_form)
         process_names_edit = QLineEdit(", ".join(self.settings.process_names), dialog)
         process_names_edit.setPlaceholderText("GTA5_Enhanced.exe, GTA5.exe")
-        form.addRow("Process names", process_names_edit)
+        process_form.addRow("Process names", process_names_edit)
 
         suspend_seconds_spin = QDoubleSpinBox(dialog)
         suspend_seconds_spin.setRange(1.0, 30.0)
         suspend_seconds_spin.setSingleStep(0.5)
         suspend_seconds_spin.setDecimals(1)
         suspend_seconds_spin.setValue(float(self.settings.suspend_seconds))
-        form.addRow("Suspend seconds", suspend_seconds_spin)
+        process_form.addRow("Suspend duration", suspend_seconds_spin)
+
+        layout.addWidget(title_section)
+        layout.addWidget(process_section)
+        layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)

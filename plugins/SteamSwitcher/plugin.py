@@ -5,15 +5,20 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QDialog,
     QDialogButtonBox,
-    QFormLayout,
     QMessageBox,
     QVBoxLayout,
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import (
+    SettingsSection,
+    ToggleSwitch,
+    add_dialog_header,
+    style_dialog_buttons,
+)
+from keydeck.ui.theme import size_dialog
 
 PLUGIN_DIR = Path(__file__).resolve().parent
 if str(PLUGIN_DIR) not in sys.path:
@@ -101,8 +106,17 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("Select Steam Account")
         dialog.setModal(True)
+        size_dialog(dialog, 700, 640, 560, 500)
 
         layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        add_dialog_header(
+            layout,
+            "Choose a Steam account",
+            "Select the remembered account to assign to this button.",
+            dialog,
+        )
         
         from PySide6.QtWidgets import QListWidget, QListWidgetItem
         from PySide6.QtGui import QIcon
@@ -138,6 +152,7 @@ class Plugin(PluginBase):
         layout.addWidget(list_widget)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
@@ -154,20 +169,31 @@ class Plugin(PluginBase):
         dialog = QDialog(parent)
         dialog.setWindowTitle("SteamSwitcher Global Settings")
         dialog.setModal(True)
+        size_dialog(dialog, 620, 480, 520, 360)
 
         layout = QVBoxLayout(dialog)
-        form = QFormLayout()
-        layout.addLayout(form)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(18)
+        add_dialog_header(
+            layout,
+            "SteamSwitcher",
+            "Choose how Steam should behave during an account switch.",
+            dialog,
+        )
+        section = SettingsSection("Account switching", parent=dialog)
 
-        close_steam_checkbox = QCheckBox("Close Steam before switch", dialog)
+        close_steam_checkbox = ToggleSwitch("Close Steam before switch", dialog)
         close_steam_checkbox.setChecked(bool(current.get("close_steam_before_switch", True)))
-        form.addRow(close_steam_checkbox)
+        section.content_layout.addWidget(close_steam_checkbox)
 
-        launch_steam_checkbox = QCheckBox("Launch Steam after switch", dialog)
+        launch_steam_checkbox = ToggleSwitch("Launch Steam after switch", dialog)
         launch_steam_checkbox.setChecked(bool(current.get("launch_steam_after_switch", True)))
-        form.addRow(launch_steam_checkbox)
+        section.content_layout.addWidget(launch_steam_checkbox)
+        layout.addWidget(section)
+        layout.addStretch(1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)

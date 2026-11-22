@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal, QTimer
-from PySide6.QtGui import QColor, QDrag, QFont, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap, QLinearGradient
+from PySide6.QtGui import QColor, QDrag, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap, QLinearGradient
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFrame,
+    QFormLayout,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -28,74 +31,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from keydeck import __version__
 from keydeck.config import BUTTON_SIZE_MAP, AppSettings, DeckPage
 from keydeck.plugin_api import Action, PluginBase
+from keydeck.plugin_manager import PluginInfo
 from keydeck.ui.deck_button import SquircleButton
+from keydeck.ui.controls import ToggleSwitch, add_dialog_header, style_dialog_buttons
+from keydeck.ui.theme import size_dialog
 
 MIME_SLOT_INDEX = "application/x-keydeck-slot-index"
-
-
-class ModernCheckBox(QCheckBox):
-    def __init__(self, text: str = "", parent: QWidget | None = None) -> None:
-        super().__init__(text, parent)
-        self.setFixedHeight(24)
-
-    def paintEvent(self, event) -> None:  # noqa: N802
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing, True)
-
-        box_size = 20
-        box_y = int((self.height() - box_size) / 2)
-        box_rect = QRectF(2.0, float(box_y), float(box_size), float(box_size))
-
-        if not self.isEnabled():
-            bg_color = QColor("#18181b")
-            border_color = QColor("#27272a")
-            check_color = QColor("#52525b")
-        elif self.isChecked():
-            bg_color = QColor("#2563eb")
-            border_color = QColor("#3b82f6")
-            check_color = QColor("#ffffff")
-        else:
-            bg_color = QColor("#09090b")
-            border_color = QColor("#52525b")
-            check_color = QColor("transparent")
-
-        path = QPainterPath()
-        path.addRoundedRect(box_rect, 5.0, 5.0)
-        painter.fillPath(path, bg_color)
-
-        pen = QPen(border_color, 2.0 if self.isChecked() else 1.5)
-        painter.setPen(pen)
-        painter.drawPath(path)
-
-        if self.isChecked():
-            pen_check = QPen(check_color, 2.6)
-            pen_check.setCapStyle(Qt.RoundCap)
-            pen_check.setJoinStyle(Qt.RoundJoin)
-            painter.setPen(pen_check)
-
-            p1 = QPointF(box_rect.left() + 5.0, box_rect.top() + 10.0)
-            p2 = QPointF(box_rect.left() + 8.5, box_rect.top() + 14.0)
-            p3 = QPointF(box_rect.left() + 15.0, box_rect.top() + 6.5)
-
-            path_check = QPainterPath()
-            path_check.moveTo(p1)
-            path_check.lineTo(p2)
-            path_check.lineTo(p3)
-            painter.drawPath(path_check)
-
-        if self.text():
-            font = self.font()
-            font.setPixelSize(13)
-            font.setWeight(QFont.Weight.DemiBold)
-            painter.setFont(font)
-            text_color = QColor("#52525b") if not self.isEnabled() else QColor("#f4f4f5")
-            painter.setPen(text_color)
-            text_rect = QRectF(float(box_size + 14), 0.0, float(self.width() - box_size - 14), float(self.height()))
-            painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft, self.text())
-
-        painter.end()
 
 
 class ActionPickerDialog(QDialog):
@@ -107,105 +51,49 @@ class ActionPickerDialog(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(f"Select Action for Slot {slot_number}")
+        self.setWindowTitle(f"Choose action · Button {slot_number}")
         self.setModal(True)
-        self.resize(480, 420)
+        size_dialog(self, 760, 720, 620, 560)
         self._selected_id = current_action_id
 
-        self.setStyleSheet(
-            """
-            QDialog {
-                background-color: #121214;
-                color: #f4f4f5;
-                font-family: 'Segoe UI', system-ui, sans-serif;
-            }
-            QLabel#Header {
-                font-size: 15px;
-                font-weight: 700;
-                color: #ffffff;
-            }
-            QListWidget {
-                background-color: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 8px;
-                outline: none;
-                padding: 6px;
-            }
-            QListWidget::item {
-                background-color: #27272a;
-                border-radius: 6px;
-                padding: 8px 12px;
-                margin-bottom: 4px;
-                color: #f4f4f5;
-            }
-            QListWidget::item:hover {
-                background-color: #3f3f46;
-            }
-            QListWidget::item:selected {
-                background-color: #2563eb;
-                color: #ffffff;
-            }
-            QPushButton#Btn {
-                background-color: #27272a;
-                border: 1px solid #3f3f46;
-                border-radius: 6px;
-                padding: 8px 16px;
-                color: #ffffff;
-                font-weight: 600;
-            }
-            QPushButton#Btn:hover {
-                background-color: #3f3f46;
-            }
-            QPushButton#PrimaryBtn {
-                background-color: #2563eb;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                color: #ffffff;
-                font-weight: 600;
-            }
-            QPushButton#PrimaryBtn:hover {
-                background-color: #1d4ed8;
-            }
-            """
-        )
-
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(12)
 
-        header = QLabel(f"Assign Action to Slot #{slot_number}", self)
-        header.setObjectName("Header")
+        eyebrow = QLabel(f"BUTTON {slot_number}", self)
+        eyebrow.setObjectName("SectionEyebrow")
+        layout.addWidget(eyebrow)
+
+        header = QLabel("Choose an action", self)
+        header.setObjectName("PageTitle")
         layout.addWidget(header)
 
-        self.list_widget = QListWidget(self)
+        subtitle = QLabel(
+            "Select what this button should do, or clear its current assignment.",
+            self,
+        )
+        subtitle.setObjectName("PageSubtitle")
+        layout.addWidget(subtitle)
 
-        # Add Empty option
-        empty_item = QListWidgetItem("🚫  < Empty / Clear Slot >")
+        self.search_edit = QLineEdit(self)
+        self.search_edit.setClearButtonEnabled(True)
+        self.search_edit.setPlaceholderText("Search actions or plugins")
+        self.search_edit.setAccessibleName("Search available actions")
+        layout.addWidget(self.search_edit)
+
+        self.list_widget = QListWidget(self)
+        self.list_widget.setObjectName("ActionList")
+        self.list_widget.setUniformItemSizes(True)
+
+        empty_item = QListWidgetItem("Clear this button")
         empty_item.setData(Qt.UserRole, "")
         self.list_widget.addItem(empty_item)
 
         for action in actions:
-            emoji = "🔌"
-            pid = action.plugin_id
-            aid = action.action_id
-            if "SteamSwitcher" in pid or "SteamSwitcher" in aid:
-                emoji = "👤"
-            elif "SteamLauncher" in pid or "Steam" in pid:
-                emoji = "🎮"
-            elif "GtaClearSession" in pid or "Gta" in pid or "session" in aid.lower():
-                emoji = "🧹"
-            elif "ResolutionSwitcher" in pid or "Resolution" in pid:
-                emoji = "🖥️"
-            elif "WaveLink" in pid:
-                emoji = "🎵"
-            elif "ZapretToggler" in pid or "Zapret" in pid:
-                emoji = "🌐"
-
-            text = f"{action.title}  ({action.plugin_id})"
-            item = QListWidgetItem(text)
+            item = QListWidgetItem(action.title)
             if action.icon_path:
                 item.setIcon(QIcon(action.icon_path))
+            item.setToolTip(f"{action.title}\nProvided by {action.plugin_id}")
             item.setData(Qt.UserRole, action.action_id)
             self.list_widget.addItem(item)
             if current_action_id == action.action_id:
@@ -215,22 +103,63 @@ class ActionPickerDialog(QDialog):
             self.list_widget.setCurrentItem(empty_item)
 
         self.list_widget.itemDoubleClicked.connect(self._on_select)
+        self.list_widget.currentItemChanged.connect(self._update_selection_label)
+        self.search_edit.textChanged.connect(self._filter_actions)
         layout.addWidget(self.list_widget, 1)
+
+        self.selection_label = QLabel(self)
+        self.selection_label.setObjectName("Muted")
+        layout.addWidget(self.selection_label)
 
         btn_box = QHBoxLayout()
         btn_box.addStretch(1)
 
         cancel_btn = QPushButton("Cancel", self)
-        cancel_btn.setObjectName("Btn")
+        cancel_btn.setObjectName("QuietButton")
         cancel_btn.clicked.connect(self.reject)
         btn_box.addWidget(cancel_btn)
 
-        select_btn = QPushButton("Select Action", self)
-        select_btn.setObjectName("PrimaryBtn")
-        select_btn.clicked.connect(self._on_select)
-        btn_box.addWidget(select_btn)
+        self.select_button = QPushButton("Assign action", self)
+        self.select_button.setObjectName("PrimaryButton")
+        self.select_button.clicked.connect(self._on_select)
+        btn_box.addWidget(self.select_button)
 
         layout.addLayout(btn_box)
+        self._update_selection_label(self.list_widget.currentItem(), None)
+
+    def _filter_actions(self, text: str) -> None:
+        query = text.strip().casefold()
+        first_visible = None
+        first_visible_action = None
+        for index in range(self.list_widget.count()):
+            item = self.list_widget.item(index)
+            is_clear_action = not item.data(Qt.UserRole)
+            hidden = (
+                not is_clear_action
+                and query not in item.text().casefold()
+                and query not in item.toolTip().casefold()
+            )
+            item.setHidden(hidden)
+            if not hidden and first_visible is None:
+                first_visible = item
+            if not hidden and not is_clear_action and first_visible_action is None:
+                first_visible_action = item
+        current = self.list_widget.currentItem()
+        if current is None or current.isHidden():
+            self.list_widget.setCurrentItem(first_visible_action or first_visible)
+
+    def _update_selection_label(self, current, _previous) -> None:
+        if current is None:
+            self.selection_label.setText("No matching actions.")
+            self.select_button.setEnabled(False)
+            return
+        action_id = current.data(Qt.UserRole)
+        self.selection_label.setText(
+            "This button will be cleared."
+            if not action_id
+            else f"Provided by {current.toolTip().splitlines()[-1].removeprefix('Provided by ')}"
+        )
+        self.select_button.setEnabled(True)
 
     def _on_select(self) -> None:
         item = self.list_widget.currentItem()
@@ -240,6 +169,81 @@ class ActionPickerDialog(QDialog):
 
     def selected_action_id(self) -> str | None:
         return self._selected_id if self._selected_id else None
+
+
+class ButtonAppearanceDialog(QDialog):
+    def __init__(
+        self,
+        title: str,
+        icon_path: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Button appearance")
+        self.setModal(True)
+        size_dialog(self, 560, 300, 460, 260)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        add_dialog_header(
+            layout,
+            "Button appearance",
+            "Customize the title and icon shown for this button.",
+            self,
+        )
+
+        form = QFormLayout()
+        form.setSpacing(10)
+        self.title_edit = QLineEdit(title, self)
+        self.title_edit.setPlaceholderText("Leave blank to use the plugin title")
+        form.addRow("Button title", self.title_edit)
+
+        icon_row = QWidget(self)
+        icon_layout = QHBoxLayout(icon_row)
+        icon_layout.setContentsMargins(0, 0, 0, 0)
+        icon_layout.setSpacing(8)
+        self.icon_edit = QLineEdit(icon_path, icon_row)
+        self.icon_edit.setReadOnly(True)
+        self.icon_edit.setToolTip(icon_path)
+        icon_layout.addWidget(self.icon_edit, 1)
+
+        browse_button = QPushButton("Browse…", icon_row)
+        browse_button.setObjectName("QuietButton")
+        browse_button.clicked.connect(self._browse_icon)
+        icon_layout.addWidget(browse_button)
+
+        clear_button = QPushButton("Clear", icon_row)
+        clear_button.setObjectName("QuietButton")
+        clear_button.clicked.connect(self.icon_edit.clear)
+        icon_layout.addWidget(clear_button)
+        form.addRow("Custom icon", icon_row)
+        layout.addLayout(form)
+
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel,
+            self,
+        )
+        style_dialog_buttons(button_box, QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def _browse_icon(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose button icon",
+            self.icon_edit.text(),
+            "Images (*.png *.jpg *.jpeg *.bmp *.webp *.ico *.svg);;All files (*)",
+        )
+        if not path:
+            return
+        if QIcon(path).isNull():
+            QMessageBox.warning(self, "Button icon", "The selected file is not a supported image.")
+            return
+        self.icon_edit.setText(str(Path(path).resolve()))
+        self.icon_edit.setToolTip(self.icon_edit.text())
 
 
 class PreviewSquircleButton(SquircleButton):
@@ -272,7 +276,7 @@ class PreviewSquircleButton(SquircleButton):
             w = float(self.width())
             h = float(self.height())
             rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
-            radius = max(8.0, float(min(w, h) * 0.18))
+            radius = max(4.0, float(min(w, h) * 0.04))
             path = QPainterPath()
             path.addRoundedRect(rect, radius, radius)
 
@@ -389,6 +393,12 @@ class PreviewDeckButtonWidget(QWidget):
         layout.setSpacing(6)
 
         self.button = PreviewSquircleButton(slot_index, size, settings_icon, settings_icon_path, self)
+        self.button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.button.customContextMenuRequested.connect(
+            lambda position: self._show_context_menu(
+                self.button.mapToGlobal(position)
+            )
+        )
         self.button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button.settings_requested.connect(self.settings_requested.emit)
         layout.addWidget(self.button, alignment=Qt.AlignHCenter)
@@ -402,7 +412,12 @@ class PreviewDeckButtonWidget(QWidget):
 
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-    def set_action(self, action: Action | None, settings: dict | None = None) -> None:
+    def set_action(
+        self,
+        action: Action | None,
+        settings: dict | None = None,
+        overrides: dict[str, str] | None = None,
+    ) -> None:
         self.current_action = action
         if action is None:
             self.button.set_avatar(None)
@@ -417,6 +432,9 @@ class PreviewDeckButtonWidget(QWidget):
             dyn_icon = action.action_icon_callback(self.slot_index, settings)
             if dyn_icon:
                 icon_path = dyn_icon
+        custom_icon_path = overrides.get("icon_path", "") if overrides else ""
+        if custom_icon_path and Path(custom_icon_path).is_file():
+            icon_path = custom_icon_path
 
         self.button.set_show_plus(False)
         self.button.set_avatar(
@@ -432,6 +450,8 @@ class PreviewDeckButtonWidget(QWidget):
         title = action.title
         if settings and "account_name" in settings:
             title = settings["account_name"]
+        if overrides and overrides.get("title"):
+            title = overrides["title"]
 
         self._set_title(title)
         self.title.setStyleSheet("color: #f4f4f5; font-size: 10px; font-weight: 600;")
@@ -441,36 +461,24 @@ class PreviewDeckButtonWidget(QWidget):
         self.title.setText(metrics.elidedText(title, Qt.ElideRight, self.title.width()))
 
     def contextMenuEvent(self, event) -> None:  # noqa: N802
+        self._show_context_menu(event.globalPos())
+        event.accept()
+
+    def _show_context_menu(self, global_position: QPoint) -> None:
         from PySide6.QtWidgets import QMenu
+
         menu = QMenu(self)
-        menu.setStyleSheet(
-            """
-            QMenu {
-                background-color: #18181b;
-                color: #e4e4e7;
-                border: 1px solid #27272a;
-                border-radius: 6px;
-                padding: 4px;
-            }
-            QMenu::item {
-                padding: 6px 16px;
-                border-radius: 4px;
-            }
-            QMenu::item:selected {
-                background-color: #2563eb;
-                color: #ffffff;
-            }
-            """
-        )
         assign_act = menu.addAction("Assign / Change Action...")
         
         hotkey_act = None
+        appearance_act = None
         settings_act = None
         plugin_settings_act = None
         clear_act = None
         
         if self.current_action is not None:
             hotkey_act = menu.addAction("Assign Hotkey...")
+            appearance_act = menu.addAction("Button Appearance...")
             
             if getattr(self.current_action, "action_settings_callback", None):
                 settings_act = menu.addAction("Action Settings...")
@@ -481,11 +489,14 @@ class PreviewDeckButtonWidget(QWidget):
             menu.addSeparator()
             clear_act = menu.addAction("Clear Button")
 
-        chosen = menu.exec(event.globalPos())
+        chosen = menu.exec(global_position)
         dialog = self.window()
         if chosen == assign_act:
             if hasattr(dialog, "_open_action_picker"):
                 dialog._open_action_picker(self.slot_index)
+        elif chosen and appearance_act and chosen == appearance_act:
+            if hasattr(dialog, "_open_button_appearance"):
+                dialog._open_button_appearance(self.slot_index)
         elif chosen and hotkey_act and chosen == hotkey_act:
             if hasattr(dialog, "_assign_hotkey"):
                 dialog._assign_hotkey(self.slot_index)
@@ -496,6 +507,8 @@ class PreviewDeckButtonWidget(QWidget):
                     dialog._refresh_slot(self.slot_index)
         elif chosen and plugin_settings_act and chosen == plugin_settings_act:
             self.current_action.settings_callback()
+            if hasattr(dialog, "_refresh_plugin_actions"):
+                dialog._refresh_plugin_actions()
             if hasattr(dialog, "_refresh_slot"):
                 dialog._refresh_slot(self.slot_index)
         elif chosen and clear_act and chosen == clear_act:
@@ -507,37 +520,48 @@ class StreamDeckChassis(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("Chassis")
-        self.setStyleSheet(
-            """
-            QFrame#Chassis {
-                background-color: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 12px;
-            }
-            """
-        )
 
 
 class SettingsDialog(QDialog):
+    update_check_requested = Signal()
+    update_install_requested = Signal()
+    autostart_task_requested = Signal(bool)
+    actions_changed = Signal(object)
+
     def __init__(
         self,
         settings: AppSettings,
         actions: list[Action],
         plugins: list[PluginBase] | None = None,
         plugin_errors: list[str] | None = None,
-        reload_plugins_callback: Callable[[], list[Action]] | None = None,
+        reload_plugins_callback: (
+            Callable[
+                [set[str]],
+                tuple[list[Action], list[PluginBase], list[str], list[PluginInfo]],
+            ]
+            | None
+        ) = None,
         parent: QWidget | None = None,
+        refresh_actions_callback: Callable[[], list[Action]] | None = None,
+        available_plugins: list[PluginInfo] | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("KeyDeck Control Center")
+        self.setWindowTitle("KeyDeck Settings")
         self.setModal(True)
-        self.resize(920, 680)
-        self.setMinimumSize(820, 580)
+        size_dialog(self, 1240, 900, 1040, 740)
 
         self.plugins = plugins or []
         self.plugin_errors = plugin_errors or []
         self.actions = actions
+        self._disabled_plugins = set(settings.disabled_plugins)
+        self.available_plugins = (
+            list(available_plugins)
+            if available_plugins is not None
+            else self._build_plugin_catalog(self.plugins, self.actions)
+        )
+        self._plugins_by_id = {self._plugin_id(plugin): plugin for plugin in self.plugins}
         self._reload_plugins_callback = reload_plugins_callback
+        self._refresh_actions_callback = refresh_actions_callback
         self._action_by_id = {action.action_id: action for action in actions}
         self._pages = deepcopy(settings.pages) or [
             DeckPage(
@@ -556,6 +580,8 @@ class SettingsDialog(QDialog):
         self._infinite_scroll = settings.infinite_scroll
         self._auto_start = settings.auto_start
         self._high_priority = settings.high_priority
+        self._run_as_admin = settings.run_as_admin
+        self._current_version = __version__
         self._button_widgets: list[PreviewDeckButtonWidget] = []
         self._preview_rebuild_pending = False
         self._preview_generation = 0
@@ -563,135 +589,82 @@ class SettingsDialog(QDialog):
         self._settings_icon = self._load_white_icon(Path(self._settings_icon_path), 16)
         self._normalize_slot_actions()
 
-        self.setStyleSheet(
-            """
-            QDialog {
-                background-color: #121214;
-                color: #f4f4f5;
-                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            }
-            QListWidget#Sidebar {
-                background-color: #18181b;
-                border: none;
-                border-right: 1px solid #27272a;
-                outline: none;
-                padding: 16px 12px;
-            }
-            QListWidget#Sidebar::item {
-                background-color: transparent;
-                border-radius: 8px;
-                padding: 14px 16px;
-                color: #a1a1aa;
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 8px;
-            }
-            QListWidget#Sidebar::item:hover {
-                background-color: #18181b;
-                color: #f4f4f5;
-            }
-            QListWidget#Sidebar::item:selected {
-                background-color: #2563eb;
-                color: #ffffff;
-            }
-            QLabel#PageTitle {
-                font-size: 18px;
-                font-weight: 700;
-                color: #ffffff;
-            }
-            QLabel#PageSubtitle {
-                font-size: 12px;
-                color: #71717a;
-            }
-            QFrame#Card {
-                background-color: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 12px;
-            }
-            QPushButton#UiButton {
-                background-color: #27272a;
-                border: 1px solid #3f3f46;
-                border-radius: 8px;
-                padding: 8px 16px;
-                color: #ffffff;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            QPushButton#UiButton:hover {
-                background-color: #3f3f46;
-            }
-            QPushButton#PrimaryButton {
-                background-color: #2563eb;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 20px;
-                color: #ffffff;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            QPushButton#PrimaryButton:hover {
-                background-color: #1d4ed8;
-            }
-            QSpinBox, QComboBox {
-                background-color: #18181b;
-                border: 1px solid #3f3f46;
-                border-radius: 6px;
-                padding: 6px 10px;
-                color: #ffffff;
-                font-weight: 600;
-            }
-            """
-        )
-
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # 1. Sidebar Navigation
-        self.sidebar = QListWidget(self)
+        nav_panel = QFrame(self)
+        nav_panel.setObjectName("NavigationPanel")
+        nav_panel.setFixedWidth(230)
+        nav_layout = QVBoxLayout(nav_panel)
+        nav_layout.setContentsMargins(18, 24, 14, 18)
+        nav_layout.setSpacing(10)
+
+        brand = QLabel("KEYDECK", nav_panel)
+        brand.setObjectName("SectionTitle")
+        nav_layout.addWidget(brand)
+        nav_caption = QLabel("CONTROL CENTER", nav_panel)
+        nav_caption.setObjectName("SectionEyebrow")
+        nav_layout.addWidget(nav_caption)
+        nav_layout.addSpacing(20)
+
+        section_label = QLabel("SETTINGS", nav_panel)
+        section_label.setObjectName("SectionEyebrow")
+        nav_layout.addWidget(section_label)
+
+        self.sidebar = QListWidget(nav_panel)
         self.sidebar.setObjectName("Sidebar")
-        self.sidebar.setFixedWidth(220)
+        self.sidebar.setFrameShape(QFrame.NoFrame)
+        for title in ("Button layout", "Plugins", "System", "Updates"):
+            self.sidebar.addItem(QListWidgetItem(title))
+        nav_layout.addWidget(self.sidebar, 1)
 
-        item_deck = QListWidgetItem("🎛  Deck Editor")
-        item_plugins = QListWidgetItem("🔌  Plugins & Services")
-        item_system = QListWidgetItem("⚡  System & Autorun")
+        version_label = QLabel(f"KeyDeck  ·  v{self._current_version}", nav_panel)
+        version_label.setObjectName("Muted")
+        nav_layout.addWidget(version_label)
+        root.addWidget(nav_panel)
 
-        self.sidebar.addItem(item_deck)
-        self.sidebar.addItem(item_plugins)
-        self.sidebar.addItem(item_system)
-        self.sidebar.setCurrentItem(item_deck)
-
-        root.addWidget(self.sidebar)
-
-        # 2. Main Stacked Content Area
         right_container = QWidget(self)
         right_layout = QVBoxLayout(right_container)
-        right_layout.setContentsMargins(24, 20, 24, 20)
-        right_layout.setSpacing(16)
+        right_layout.setContentsMargins(30, 24, 30, 20)
+        right_layout.setSpacing(18)
+
+        heading = QVBoxLayout()
+        heading.setSpacing(4)
+        self.section_title = QLabel(right_container)
+        self.section_title.setObjectName("PageTitle")
+        self.section_description = QLabel(right_container)
+        self.section_description.setObjectName("PageSubtitle")
+        self.section_description.setWordWrap(True)
+        heading.addWidget(self.section_title)
+        heading.addWidget(self.section_description)
+        right_layout.addLayout(heading)
 
         self.stack = QStackedWidget(right_container)
-        
-        # Build Pages
         self.page_deck = self._build_deck_editor_page(settings)
         self.page_plugins = self._build_plugins_page(self.plugins, self.plugin_errors)
         self.page_system = self._build_system_page()
+        self.page_updates = self._build_updates_page()
 
         self.stack.addWidget(self.page_deck)
         self.stack.addWidget(self.page_plugins)
         self.stack.addWidget(self.page_system)
+        self.stack.addWidget(self.page_updates)
 
         right_layout.addWidget(self.stack, 1)
 
-        # Bottom Button Bar
         bottom_bar = QHBoxLayout()
+        save_hint = QLabel("Changes are applied when saved.", right_container)
+        save_hint.setObjectName("Muted")
+        bottom_bar.addWidget(save_hint)
         bottom_bar.addStretch(1)
 
-        cancel_btn = QPushButton("Cancel", self)
-        cancel_btn.setObjectName("UiButton")
+        cancel_btn = QPushButton("Cancel", right_container)
+        cancel_btn.setObjectName("QuietButton")
         cancel_btn.clicked.connect(self.reject)
         bottom_bar.addWidget(cancel_btn)
 
-        save_btn = QPushButton("Save", self)
+        save_btn = QPushButton("Save changes", right_container)
         save_btn.setObjectName("PrimaryButton")
         save_btn.clicked.connect(self.accept)
         bottom_bar.addWidget(save_btn)
@@ -699,10 +672,11 @@ class SettingsDialog(QDialog):
         right_layout.addLayout(bottom_bar)
         root.addWidget(right_container, 1)
 
-        # Sidebar navigation connection
-        self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
+        self.sidebar.currentRowChanged.connect(self._select_section)
+        self.sidebar.setCurrentRow(0)
 
-        self._refresh_page_selector()
+        self._select_section(0)
+        self._refresh_page_list()
         self._schedule_preview_rebuild()
 
     @property
@@ -725,14 +699,65 @@ class SettingsDialog(QDialog):
     def _slot_settings(self, settings: dict[str, dict]) -> None:
         self._current_page.slot_settings = settings
 
-    def _refresh_page_selector(self) -> None:
-        self.page_selector.blockSignals(True)
-        self.page_selector.clear()
-        for page in self._pages:
-            self.page_selector.addItem(page.name, page.page_id)
-        self.page_selector.setCurrentIndex(self._selected_page_index)
-        self.page_selector.blockSignals(False)
+    @property
+    def _slot_overrides(self) -> dict[str, dict[str, str]]:
+        return self._current_page.slot_overrides
+
+    @_slot_overrides.setter
+    def _slot_overrides(self, overrides: dict[str, dict[str, str]]) -> None:
+        self._current_page.slot_overrides = overrides
+
+    def _select_section(self, section_index: int) -> None:
+        sections = (
+            ("Button layout", "Organize pages, grid dimensions, and button assignments."),
+            ("Plugins", "Enable, disable, and configure installed plugins."),
+            ("System", "Configure startup behavior and keyboard interaction."),
+            ("Updates", "Check the installed version and manage KeyDeck updates."),
+        )
+        if not 0 <= section_index < len(sections):
+            return
+        title, description = sections[section_index]
+        self.stack.setCurrentIndex(section_index)
+        self.section_title.setText(title)
+        self.section_description.setText(description)
+
+    def _refresh_page_list(self) -> None:
+        self.page_list.blockSignals(True)
+        self.page_list.clear()
+        for index, page in enumerate(self._pages):
+            item = QListWidgetItem(page.name)
+            item.setToolTip(
+                f"{page.rows} rows × {page.columns} columns · {page.rows * page.columns} buttons"
+            )
+            item.setData(Qt.UserRole, page.page_id)
+            item.setData(Qt.UserRole + 1, index)
+            self.page_list.addItem(item)
+        self.page_list.setCurrentRow(self._selected_page_index)
+        self.page_list.blockSignals(False)
         self.remove_page_btn.setEnabled(self._selected_page_index > 0)
+
+    def _update_page_tooltip(self, page_index: int) -> None:
+        if not 0 <= page_index < len(self._pages):
+            return
+        item = self.page_list.item(page_index)
+        if item is None:
+            return
+        page = self._pages[page_index]
+        item.setToolTip(
+            f"{page.rows} rows × {page.columns} columns · {page.rows * page.columns} buttons"
+        )
+
+    def _set_page_rows(self, rows: int) -> None:
+        self._current_page.rows = rows
+        self.rows_label.setText(f"Rows: {rows}")
+        self._update_page_tooltip(self._selected_page_index)
+        self._schedule_preview_rebuild()
+
+    def _set_page_columns(self, columns: int) -> None:
+        self._current_page.columns = columns
+        self.columns_label.setText(f"Columns: {columns}")
+        self._update_page_tooltip(self._selected_page_index)
+        self._schedule_preview_rebuild()
 
     def _select_page(self, page_index: int) -> None:
         if not 0 <= page_index < len(self._pages):
@@ -743,7 +768,11 @@ class SettingsDialog(QDialog):
         self.columns_spin.setValue(page.columns)
         self.rows_label.setText(f"Rows: {page.rows}")
         self.columns_label.setText(f"Columns: {page.columns}")
-        self._refresh_page_selector()
+        self.preview_page_title.setText(page.name)
+        self.page_position_label.setText(
+            f"Page {page_index + 1} of {len(self._pages)}"
+        )
+        self._refresh_page_list()
         self._schedule_preview_rebuild()
 
     def _add_page(self) -> None:
@@ -759,7 +788,7 @@ class SettingsDialog(QDialog):
             ).clamp()
         )
         self._selected_page_index = len(self._pages) - 1
-        self._refresh_page_selector()
+        self._refresh_page_list()
         self._select_page(self._selected_page_index)
 
     def _rename_page(self) -> None:
@@ -774,7 +803,8 @@ class SettingsDialog(QDialog):
         )
         if accepted and name.strip():
             page.name = name.strip()
-            self._refresh_page_selector()
+            self._refresh_page_list()
+            self.preview_page_title.setText(page.name)
 
     def _remove_page(self) -> None:
         if self._selected_page_index == 0:
@@ -797,55 +827,60 @@ class SettingsDialog(QDialog):
         }
         self._pages.pop(self._selected_page_index)
         self._selected_page_index = min(self._selected_page_index, len(self._pages) - 1)
-        self._refresh_page_selector()
+        self._refresh_page_list()
         self._select_page(self._selected_page_index)
 
     def _build_deck_editor_page(self, settings: AppSettings) -> QWidget:
         page = QWidget(self)
-        layout = QVBoxLayout(page)
+        layout = QHBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
 
-        # Page Header
-        header_col = QVBoxLayout()
-        header_col.setSpacing(2)
-        title = QLabel("Deck Layout & Editor", page)
-        title.setObjectName("PageTitle")
-        sub = QLabel("Customize your virtual Stream Deck layout, grid size, and button actions.", page)
-        sub.setObjectName("PageSubtitle")
-        header_col.addWidget(title)
-        header_col.addWidget(sub)
-        layout.addLayout(header_col)
+        pages_card = QFrame(page)
+        pages_card.setObjectName("Card")
+        pages_card.setMinimumWidth(170)
+        pages_card.setMaximumWidth(205)
+        pages_layout = QVBoxLayout(pages_card)
+        pages_layout.setContentsMargins(14, 16, 14, 14)
+        pages_layout.setSpacing(10)
 
-        page_controls = QHBoxLayout()
-        page_controls.addWidget(QLabel("Buttons page:", page))
-        self.page_selector = QComboBox(page)
-        self.page_selector.setMinimumWidth(140)
-        self.page_selector.currentIndexChanged.connect(self._select_page)
-        page_controls.addWidget(self.page_selector)
+        pages_title = QLabel("Pages", pages_card)
+        pages_title.setObjectName("SectionTitle")
+        pages_layout.addWidget(pages_title)
+        pages_hint = QLabel("Each page has its own button grid.", pages_card)
+        pages_hint.setObjectName("Muted")
+        pages_hint.setWordWrap(True)
+        pages_layout.addWidget(pages_hint)
 
-        self.add_page_btn = QPushButton("Add Page", page)
-        self.add_page_btn.setObjectName("UiButton")
+        self.page_list = QListWidget(pages_card)
+        self.page_list.setObjectName("PageList")
+        self.page_list.currentRowChanged.connect(self._select_page)
+        pages_layout.addWidget(self.page_list, 1)
+
+        self.add_page_btn = QPushButton("Add page", pages_card)
+        self.add_page_btn.setObjectName("PrimaryButton")
         self.add_page_btn.clicked.connect(self._add_page)
-        page_controls.addWidget(self.add_page_btn)
+        pages_layout.addWidget(self.add_page_btn)
 
-        self.rename_page_btn = QPushButton("Rename", page)
-        self.rename_page_btn.setObjectName("UiButton")
+        page_actions = QHBoxLayout()
+        self.rename_page_btn = QPushButton("Rename", pages_card)
+        self.rename_page_btn.setObjectName("QuietButton")
         self.rename_page_btn.clicked.connect(self._rename_page)
-        page_controls.addWidget(self.rename_page_btn)
-
-        self.remove_page_btn = QPushButton("Remove", page)
-        self.remove_page_btn.setObjectName("UiButton")
+        page_actions.addWidget(self.rename_page_btn)
+        self.remove_page_btn = QPushButton("Remove", pages_card)
+        self.remove_page_btn.setObjectName("DangerButton")
         self.remove_page_btn.clicked.connect(self._remove_page)
-        page_controls.addWidget(self.remove_page_btn)
-        page_controls.addStretch(1)
-        layout.addLayout(page_controls)
+        page_actions.addWidget(self.remove_page_btn)
+        pages_layout.addLayout(page_actions)
 
-        self.chk_infinite_scroll = ModernCheckBox(
-            "Infinite page scrolling (last page wraps to first)",
-            page,
-        )
+        separator = QFrame(pages_card)
+        separator.setFrameShape(QFrame.HLine)
+        pages_layout.addWidget(separator)
+        self.chk_infinite_scroll = ToggleSwitch("Wrap pages at ends", pages_card)
         self.chk_infinite_scroll.setChecked(self._infinite_scroll)
+        self.chk_infinite_scroll.setToolTip(
+            "Continue from the last page to the first when scrolling."
+        )
         self.chk_infinite_scroll.stateChanged.connect(
             lambda state: setattr(
                 self,
@@ -853,49 +888,64 @@ class SettingsDialog(QDialog):
                 state == Qt.Checked.value or state == 2,
             )
         )
-        layout.addWidget(self.chk_infinite_scroll)
+        pages_layout.addWidget(self.chk_infinite_scroll)
+        layout.addWidget(pages_card)
 
-        # Settings Card (Rows / Cols / Size)
-        card_controls = QFrame(page)
+        editor = QWidget(page)
+        editor_layout = QVBoxLayout(editor)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(12)
+
+        card_controls = QFrame(editor)
         card_controls.setObjectName("Card")
-        ctrl_layout = QHBoxLayout(card_controls)
-        ctrl_layout.setContentsMargins(16, 12, 16, 12)
-        ctrl_layout.setSpacing(16)
+        ctrl_layout = QVBoxLayout(card_controls)
+        ctrl_layout.setContentsMargins(16, 14, 16, 14)
+        ctrl_layout.setSpacing(12)
+
+        controls_heading = QHBoxLayout()
+        controls_title = QLabel("Grid and button size", card_controls)
+        controls_title.setObjectName("SectionTitle")
+        controls_heading.addWidget(controls_title)
+        controls_heading.addStretch(1)
+        self.page_position_label = QLabel("", card_controls)
+        self.page_position_label.setObjectName("Muted")
+        controls_heading.addWidget(self.page_position_label)
+        ctrl_layout.addLayout(controls_heading)
+
+        sliders = QHBoxLayout()
+        sliders.setSpacing(20)
 
         from PySide6.QtWidgets import QSlider
 
-        # Rows Slider
         rows_col = QVBoxLayout()
         self.rows_label = QLabel(f"Rows: {self._current_page.rows}", card_controls)
-        self.rows_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.rows_label.setObjectName("Muted")
         self.rows_spin = QSlider(Qt.Horizontal, card_controls)
         self.rows_spin.setRange(1, 8)
         self.rows_spin.setValue(self._current_page.rows)
-        self.rows_spin.setFixedWidth(120)
-        self.rows_spin.valueChanged.connect(lambda v: self.rows_label.setText(f"Rows: {v}"))
-        self.rows_spin.valueChanged.connect(self._schedule_preview_rebuild)
+        self.rows_spin.setMinimumWidth(100)
+        self.rows_spin.setToolTip("Number of button rows on this page.")
+        self.rows_spin.valueChanged.connect(self._set_page_rows)
         rows_col.addWidget(self.rows_label)
         rows_col.addWidget(self.rows_spin)
-        ctrl_layout.addLayout(rows_col)
+        sliders.addLayout(rows_col, 1)
 
-        # Columns Slider
         cols_col = QVBoxLayout()
         self.columns_label = QLabel(f"Columns: {self._current_page.columns}", card_controls)
-        self.columns_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.columns_label.setObjectName("Muted")
         self.columns_spin = QSlider(Qt.Horizontal, card_controls)
         self.columns_spin.setRange(1, 8)
         self.columns_spin.setValue(self._current_page.columns)
-        self.columns_spin.setFixedWidth(120)
-        self.columns_spin.valueChanged.connect(lambda v: self.columns_label.setText(f"Columns: {v}"))
-        self.columns_spin.valueChanged.connect(self._schedule_preview_rebuild)
+        self.columns_spin.setMinimumWidth(100)
+        self.columns_spin.setToolTip("Number of button columns on this page.")
+        self.columns_spin.valueChanged.connect(self._set_page_columns)
         cols_col.addWidget(self.columns_label)
         cols_col.addWidget(self.columns_spin)
-        ctrl_layout.addLayout(cols_col)
+        sliders.addLayout(cols_col, 1)
 
-        # Button Size Slider
         size_col = QVBoxLayout()
         self.size_label = QLabel(f"Size: {settings.button_size.capitalize()}", card_controls)
-        self.size_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.size_label.setObjectName("Muted")
         self.size_spin = QSlider(Qt.Horizontal, card_controls)
         self.size_spin.setRange(0, 2)
         sizes = ["small", "medium", "large"]
@@ -903,42 +953,51 @@ class SettingsDialog(QDialog):
             self.size_spin.setValue(sizes.index(settings.button_size))
         except ValueError:
             self.size_spin.setValue(1)
-        self.size_spin.setFixedWidth(120)
+        self.size_spin.setMinimumWidth(100)
+        self.size_spin.setToolTip("Button size applies to every page.")
         self.size_spin.valueChanged.connect(lambda v: self.size_label.setText(f"Size: {sizes[v].capitalize()}"))
         self.size_spin.valueChanged.connect(self._schedule_preview_rebuild)
         size_col.addWidget(self.size_label)
         size_col.addWidget(self.size_spin)
-        ctrl_layout.addLayout(size_col)
+        sliders.addLayout(size_col, 1)
+        ctrl_layout.addLayout(sliders)
+        editor_layout.addWidget(card_controls)
 
-        ctrl_layout.addStretch(1)
+        preview_header = QHBoxLayout()
+        self.preview_page_title = QLabel(self._current_page.name, editor)
+        self.preview_page_title.setObjectName("SectionTitle")
+        preview_header.addWidget(self.preview_page_title)
+        preview_header.addStretch(1)
+        preview_hint = QLabel(
+            "Click to assign · right-click for button options",
+            editor,
+        )
+        preview_hint.setObjectName("Muted")
+        preview_header.addWidget(preview_hint)
+        editor_layout.addLayout(preview_header)
 
-        self.reload_plugins_btn = QPushButton("🔄 Reload Plugins", card_controls)
-        self.reload_plugins_btn.setObjectName("UiButton")
-        self.reload_plugins_btn.clicked.connect(self._reload_plugins)
-        ctrl_layout.addWidget(self.reload_plugins_btn, 0, Qt.AlignVCenter)
-
-        layout.addWidget(card_controls)
-
-        # Device Chassis Preview
-        self.chassis = StreamDeckChassis(page)
+        self.chassis = StreamDeckChassis(editor)
         chassis_layout = QVBoxLayout(self.chassis)
-        chassis_layout.setContentsMargins(20, 20, 20, 20)
+        chassis_layout.setContentsMargins(16, 16, 16, 16)
 
         self.preview_scroll = QScrollArea(self.chassis)
         self.preview_scroll.setWidgetResizable(True)
-        self.preview_scroll.setStyleSheet("background: transparent; border: none;")
+        self.preview_scroll.viewport().setObjectName("DeckPreviewViewport")
+        self.preview_scroll.viewport().setStyleSheet(
+            "background-color: #242424; border: none;"
+        )
 
         self.preview_host = QWidget(self.preview_scroll)
-        self.preview_host.setStyleSheet("background: transparent;")
         self.preview_grid = QGridLayout(self.preview_host)
         self.preview_grid.setContentsMargins(0, 0, 0, 0)
-        self.preview_grid.setHorizontalSpacing(14)
-        self.preview_grid.setVerticalSpacing(14)
+        self.preview_grid.setHorizontalSpacing(12)
+        self.preview_grid.setVerticalSpacing(12)
         self.preview_grid.setAlignment(Qt.AlignCenter)
         self.preview_scroll.setWidget(self.preview_host)
 
         chassis_layout.addWidget(self.preview_scroll)
-        layout.addWidget(self.chassis, 1)
+        editor_layout.addWidget(self.chassis, 1)
+        layout.addWidget(editor, 1)
 
         return page
 
@@ -946,155 +1005,375 @@ class SettingsDialog(QDialog):
         page = QWidget(self)
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(16)
+        layout.setSpacing(12)
 
-        title = QLabel("Loaded Plugins & Background Services", page)
-        title.setObjectName("PageTitle")
-        sub = QLabel("Manage background services, global key listeners, and plugin settings.", page)
-        sub.setObjectName("PageSubtitle")
-        layout.addWidget(title)
-        layout.addWidget(sub)
+        toolbar = QHBoxLayout()
+        self.plugin_count_label = QLabel("", page)
+        self.plugin_count_label.setObjectName("Muted")
+        toolbar.addWidget(self.plugin_count_label)
+        toolbar.addStretch(1)
+        self.reload_plugins_btn = QPushButton("Reload plugins", page)
+        self.reload_plugins_btn.setObjectName("QuietButton")
+        self.reload_plugins_btn.clicked.connect(self._reload_plugins)
+        self.reload_plugins_btn.setEnabled(self._reload_plugins_callback is not None)
+        toolbar.addWidget(self.reload_plugins_btn)
+        layout.addLayout(toolbar)
 
-        scroll = QScrollArea(page)
-        scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
+        content = QHBoxLayout()
+        content.setSpacing(14)
 
-        container = QWidget(scroll)
-        container_layout = QVBoxLayout(container)
-        container_layout.setContentsMargins(0, 0, 0, 0)
-        container_layout.setSpacing(10)
+        list_card = QFrame(page)
+        list_card.setObjectName("Card")
+        list_layout = QVBoxLayout(list_card)
+        list_layout.setContentsMargins(10, 12, 10, 10)
+        list_layout.setSpacing(8)
+        list_heading = QLabel("Available plugins", list_card)
+        list_heading.setObjectName("SectionTitle")
+        list_layout.addWidget(list_heading)
+        self.plugin_list = QListWidget(list_card)
+        self.plugin_list.setObjectName("PluginList")
+        self.plugin_list.currentRowChanged.connect(self._show_plugin_details)
+        list_layout.addWidget(self.plugin_list, 1)
+        content.addWidget(list_card, 1)
 
-        if not plugins and not errors:
-            lbl = QLabel("No active plugins found.", container)
-            lbl.setStyleSheet("color: #71717a;")
-            container_layout.addWidget(lbl)
-        else:
-            for plugin in plugins:
-                card = QFrame(container)
-                card.setObjectName("Card")
-                card_layout = QHBoxLayout(card)
-                card_layout.setContentsMargins(16, 14, 16, 14)
-                card_layout.setSpacing(12)
+        details_card = QFrame(page)
+        details_card.setObjectName("Card")
+        details_layout = QVBoxLayout(details_card)
+        details_layout.setContentsMargins(20, 20, 20, 18)
+        details_layout.setSpacing(8)
 
-                plugin_name = getattr(plugin, "plugin_name", plugin.__class__.__name__)
-                plugin_id = plugin.context.plugin_id if plugin.context else getattr(plugin, "plugin_id", "core")
+        self.plugin_name_label = QLabel("Select a plugin", details_card)
+        self.plugin_name_label.setObjectName("PageTitle")
+        self.plugin_id_label = QLabel("", details_card)
+        self.plugin_id_label.setObjectName("Muted")
+        self.plugin_status_label = QLabel("", details_card)
+        self.plugin_status_label.setObjectName("StatusBadge")
+        self.plugin_enabled_toggle = ToggleSwitch("Enable this plugin", details_card)
+        self.plugin_enabled_toggle.toggled.connect(self._set_selected_plugin_enabled)
+        self.plugin_summary_label = QLabel(
+            "Choose a plugin to view its status and settings.",
+            details_card,
+        )
+        self.plugin_summary_label.setObjectName("PageSubtitle")
+        self.plugin_summary_label.setWordWrap(True)
+        self.plugin_actions_label = QLabel("", details_card)
+        self.plugin_actions_label.setObjectName("Muted")
+        details_layout.addWidget(self.plugin_name_label)
+        details_layout.addWidget(self.plugin_id_label)
+        details_layout.addWidget(self.plugin_status_label, 0, Qt.AlignLeft)
+        details_layout.addWidget(self.plugin_enabled_toggle)
+        details_layout.addSpacing(8)
+        details_layout.addWidget(self.plugin_summary_label)
+        details_layout.addWidget(self.plugin_actions_label)
 
-                # Custom Emoji mapping
-                plugin_emoji = "🔌"
-                if "SteamSwitcher" in plugin_id:
-                    plugin_emoji = "👤"
-                elif "SteamLauncher" in plugin_id or "Steam" in plugin_id:
-                    plugin_emoji = "🎮"
-                elif "GtaClearSession" in plugin_id or "Gta" in plugin_id:
-                    plugin_emoji = "🧹"
-                elif "ResolutionSwitcher" in plugin_id or "Resolution" in plugin_id:
-                    plugin_emoji = "🖥️"
-                elif "WaveLink" in plugin_id:
-                    plugin_emoji = "🎵"
-                elif "ZapretToggler" in plugin_id or "Zapret" in plugin_id:
-                    plugin_emoji = "🌐"
+        self.configure_plugin_btn = QPushButton("Open plugin settings", details_card)
+        self.configure_plugin_btn.setObjectName("PrimaryButton")
+        self.configure_plugin_btn.clicked.connect(self._configure_selected_plugin)
+        details_layout.addWidget(self.configure_plugin_btn, 0, Qt.AlignLeft)
+        details_layout.addStretch(1)
 
-                # Icon
-                icon_lbl = QLabel(card)
-                icon_lbl.setFixedSize(36, 36)
-                icon_lbl.setStyleSheet("background-color: #27272a; border-radius: 8px; font-size: 16px;")
-                icon_lbl.setAlignment(Qt.AlignCenter)
-                icon_lbl.setText(plugin_emoji)
-                card_layout.addWidget(icon_lbl)
+        self.plugin_error_card = QFrame(details_card)
+        self.plugin_error_card.setObjectName("ErrorCard")
+        error_layout = QVBoxLayout(self.plugin_error_card)
+        error_layout.setContentsMargins(14, 12, 14, 12)
+        error_layout.setSpacing(6)
+        error_heading = QLabel("Plugin load issues", self.plugin_error_card)
+        error_heading.setObjectName("ErrorTitle")
+        error_layout.addWidget(error_heading)
+        self.plugin_error_list = QListWidget(self.plugin_error_card)
+        self.plugin_error_list.setObjectName("ErrorList")
+        self.plugin_error_list.setMaximumHeight(132)
+        error_layout.addWidget(self.plugin_error_list)
+        details_layout.addWidget(self.plugin_error_card)
+        content.addWidget(details_card, 2)
 
-                info_col = QVBoxLayout()
-                info_col.setSpacing(2)
-                
-                name_lbl = QLabel(plugin_name, card)
-                name_lbl.setStyleSheet("font-size: 14px; font-weight: 700; color: #ffffff; background: transparent;")
-                
-                id_lbl = QLabel(f"ID: {plugin_id}  •  Status: Active Background Daemon", card)
-                id_lbl.setStyleSheet("font-size: 11px; color: #22c55e; background: transparent;")
-
-                info_col.addWidget(name_lbl)
-                info_col.addWidget(id_lbl)
-                card_layout.addLayout(info_col, 1)
-
-                settings_btn = QPushButton("Configure", card)
-                settings_btn.setObjectName("UiButton")
-                settings_btn.clicked.connect(lambda _, p=plugin: p.open_settings())
-                card_layout.addWidget(settings_btn)
-
-                container_layout.addWidget(card)
-
-            for err in errors:
-                card = QFrame(container)
-                card.setStyleSheet("background-color: #271616; border: 1px solid #7f1d1d; border-radius: 12px;")
-                card_layout = QHBoxLayout(card)
-                card_layout.setContentsMargins(16, 12, 16, 12)
-                err_lbl = QLabel(f"⚠ Failed to load plugin: {err}", card)
-                err_lbl.setStyleSheet("color: #f87171; font-weight: 600; font-size: 12px;")
-                card_layout.addWidget(err_lbl)
-                container_layout.addWidget(card)
-
-        container_layout.addStretch(1)
-        scroll.setWidget(container)
-        layout.addWidget(scroll, 1)
+        layout.addLayout(content, 1)
+        self._populate_plugin_list(plugins, errors, self.available_plugins)
 
         return page
+
+    def _plugin_id(self, plugin: PluginBase) -> str:
+        return (
+            plugin.context.plugin_id
+            if plugin.context
+            else getattr(plugin, "plugin_id", "core")
+        )
+
+    def _build_plugin_catalog(
+        self,
+        plugins: list[PluginBase],
+        actions: list[Action],
+    ) -> list[PluginInfo]:
+        catalog: dict[str, PluginInfo] = {}
+        for plugin in plugins:
+            plugin_id = self._plugin_id(plugin)
+            catalog[plugin_id] = PluginInfo(
+                plugin_id,
+                getattr(plugin, "plugin_name", plugin.__class__.__name__),
+            )
+        for action in actions:
+            catalog.setdefault(action.plugin_id, PluginInfo(action.plugin_id, action.title))
+        return list(catalog.values())
+
+    def _populate_plugin_list(
+        self,
+        plugins: list[PluginBase],
+        errors: list[str],
+        available_plugins: list[PluginInfo] | None = None,
+    ) -> None:
+        selected_plugin_id = (
+            self.plugin_list.currentItem().data(Qt.UserRole)
+            if self.plugin_list.currentItem()
+            else None
+        )
+        self.plugins = plugins
+        self._plugins_by_id = {self._plugin_id(plugin): plugin for plugin in plugins}
+        self.plugin_errors = errors
+        if available_plugins is not None:
+            self.available_plugins = list(available_plugins)
+        else:
+            self.available_plugins = self._build_plugin_catalog(plugins, self.actions)
+        self.plugin_list.blockSignals(True)
+        self.plugin_list.clear()
+        selected_row = 0
+        for index, plugin_info in enumerate(self.available_plugins):
+            item = QListWidgetItem(plugin_info.plugin_name)
+            item.setData(Qt.UserRole, plugin_info.plugin_id)
+            item.setToolTip(plugin_info.plugin_id)
+            self.plugin_list.addItem(item)
+            if plugin_info.plugin_id == selected_plugin_id:
+                selected_row = index
+        self.plugin_list.setCurrentRow(
+            selected_row if self.available_plugins else -1
+        )
+        self.plugin_list.blockSignals(False)
+
+        disabled_count = sum(
+            plugin.plugin_id in self._disabled_plugins
+            for plugin in self.available_plugins
+        )
+        self.plugin_count_label.setText(
+            f"{len(self.available_plugins)} available · {disabled_count} disabled"
+        )
+        self.plugin_error_list.clear()
+        for error in errors:
+            item = QListWidgetItem(error)
+            item.setToolTip(error)
+            self.plugin_error_list.addItem(item)
+        self.plugin_error_card.setVisible(bool(errors))
+        if self.available_plugins:
+            self._show_plugin_details(self.plugin_list.currentRow())
+        else:
+            self._show_plugin_details(-1)
+
+    def _show_plugin_details(self, row: int) -> None:
+        if not 0 <= row < len(self.available_plugins):
+            self.plugin_name_label.setText("No plugin selected")
+            self.plugin_id_label.clear()
+            self.plugin_status_label.clear()
+            self.plugin_summary_label.setText(
+                "No installed plugins were found. Check plugin load issues below if any are listed."
+            )
+            self.plugin_actions_label.clear()
+            self.configure_plugin_btn.setEnabled(False)
+            self.plugin_enabled_toggle.setEnabled(False)
+            return
+
+        plugin_info = self.available_plugins[row]
+        plugin_id = plugin_info.plugin_id
+        plugin_name = plugin_info.plugin_name
+        action_count = sum(action.plugin_id == plugin_id for action in self.actions)
+        disabled = plugin_id in self._disabled_plugins
+        plugin = self._plugins_by_id.get(plugin_id)
+        has_settings = plugin is not None or any(
+            action.plugin_id == plugin_id and action.settings_callback is not None
+            for action in self.actions
+        )
+        self.plugin_name_label.setText(plugin_name)
+        self.plugin_id_label.setText(plugin_id)
+        self.plugin_status_label.setText(
+            "Disabled" if disabled else "Loaded" if plugin is not None or action_count else "Not loaded"
+        )
+        if disabled:
+            summary = (
+                "This plugin is disabled. Its actions and background services are stopped "
+                "when changes are saved; its button assignments are kept."
+            )
+        elif plugin is None and not action_count:
+            summary = "This plugin is enabled but was not loaded. Check plugin load issues below."
+        else:
+            summary = (
+                "Configure this plugin's shared settings. Button-specific options remain "
+                "available from the layout preview."
+            )
+        self.plugin_summary_label.setText(summary)
+        self.plugin_actions_label.setText(
+            f"{action_count} active {'action' if action_count == 1 else 'actions'}"
+        )
+        self.plugin_enabled_toggle.blockSignals(True)
+        self.plugin_enabled_toggle.setChecked(not disabled)
+        self.plugin_enabled_toggle.blockSignals(False)
+        self.plugin_enabled_toggle.setEnabled(True)
+        self.configure_plugin_btn.setEnabled(not disabled and has_settings)
+
+    def _configure_selected_plugin(self) -> None:
+        row = self.plugin_list.currentRow()
+        if not 0 <= row < len(self.available_plugins):
+            return
+        plugin_id = self.available_plugins[row].plugin_id
+        if plugin_id in self._disabled_plugins:
+            return
+        plugin = self._plugins_by_id.get(plugin_id)
+        if plugin is not None:
+            plugin.open_settings()
+        else:
+            callback = next(
+                (
+                    action.settings_callback
+                    for action in self.actions
+                    if action.plugin_id == plugin_id and action.settings_callback is not None
+                ),
+                None,
+            )
+            if callback is not None:
+                callback()
+        self._refresh_plugin_actions()
+
+    def _set_selected_plugin_enabled(self, enabled: bool) -> None:
+        item = self.plugin_list.currentItem()
+        if item is None:
+            return
+        plugin_id = item.data(Qt.UserRole)
+        if enabled:
+            self._disabled_plugins.discard(plugin_id)
+        else:
+            self._disabled_plugins.add(plugin_id)
+        self._show_plugin_details(self.plugin_list.currentRow())
+
+    def _refresh_plugin_actions(self) -> None:
+        if self._refresh_actions_callback is not None:
+            self.actions = self._refresh_actions_callback()
+            self._action_by_id = {action.action_id: action for action in self.actions}
+            self._normalize_slot_actions()
+            self._show_plugin_details(self.plugin_list.currentRow())
+            self._schedule_preview_rebuild()
+            self.actions_changed.emit(self.actions)
 
 
     def _build_system_page(self) -> QWidget:
         page = QWidget(self)
-        layout = QVBoxLayout(page)
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea(page)
+        scroll.setWidgetResizable(True)
+        content = QWidget(scroll)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(16)
+        layout.setSpacing(14)
 
-        title = QLabel("System & Startup Settings", page)
-        title.setObjectName("PageTitle")
-        sub = QLabel("Configure autostart, process priority, and low-level Windows integration.", page)
-        sub.setObjectName("PageSubtitle")
-        layout.addWidget(title)
-        layout.addWidget(sub)
+        startup_card = QFrame(content)
+        startup_card.setObjectName("Card")
+        startup_layout = QVBoxLayout(startup_card)
+        startup_layout.setContentsMargins(18, 18, 18, 18)
+        startup_layout.setSpacing(10)
 
-        card = QFrame(page)
-        card.setObjectName("Card")
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(16, 16, 16, 16)
-        card_layout.setSpacing(12)
+        startup_title = QLabel("Startup", startup_card)
+        startup_title.setObjectName("SectionTitle")
+        startup_layout.addWidget(startup_title)
+        startup_description = QLabel(
+            "Choose whether KeyDeck starts with Windows and which permissions it uses.",
+            startup_card,
+        )
+        startup_description.setObjectName("PageSubtitle")
+        startup_description.setWordWrap(True)
+        startup_layout.addWidget(startup_description)
 
-        # Theme Selector
-        theme_layout = QHBoxLayout()
-        theme_lbl = QLabel("Theme:", card)
-        theme_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
-        theme_combo = QComboBox(card)
-        theme_combo.addItem("Dark")
-        theme_combo.addItem("Midnight (Coming Soon)")
-        theme_combo.addItem("Light (Coming Soon)")
-        theme_layout.addWidget(theme_lbl)
-        theme_layout.addWidget(theme_combo)
-        theme_layout.addStretch(1)
-        card_layout.addLayout(theme_layout)
-
-        card_layout.addSpacing(8)
-
-        # Auto Start Checkbox
-        self.chk_auto_start = ModernCheckBox("Enable Auto-Start on Windows Logon", card)
+        self.chk_auto_start = ToggleSwitch(
+            "Start KeyDeck when I sign in to Windows",
+            startup_card,
+        )
         self.chk_auto_start.setChecked(self._auto_start)
-        card_layout.addWidget(self.chk_auto_start)
+        startup_layout.addWidget(self.chk_auto_start)
 
-        auto_start_desc = QLabel("Configures Windows Task Scheduler to start KeyDeck in background.", card)
-        auto_start_desc.setStyleSheet("color: #71717a; font-size: 11px; margin-left: 34px; background: transparent;")
-        card_layout.addWidget(auto_start_desc)
+        auto_start_desc = QLabel(
+            "Uses Windows Task Scheduler to launch KeyDeck in the background.",
+            startup_card,
+        )
+        auto_start_desc.setObjectName("Muted")
+        auto_start_desc.setWordWrap(True)
+        startup_layout.addWidget(auto_start_desc)
 
-        self.chk_right_alt_toggle = ModernCheckBox(
-            "Use Right Alt to Show / Hide KeyDeck",
-            card,
+        self.autostart_task_button = QPushButton(
+            "Create or update startup task",
+            startup_card,
+        )
+        self.autostart_task_button.setObjectName("QuietButton")
+        self.autostart_task_button.setEnabled(self._auto_start)
+        self.autostart_task_button.setToolTip(
+            "Register the current auto-start and administrator settings immediately."
+        )
+        self.autostart_task_button.clicked.connect(
+            lambda: self.autostart_task_requested.emit(self._run_as_admin)
+        )
+        startup_layout.addWidget(self.autostart_task_button, 0, Qt.AlignLeft)
+
+        self.chk_run_as_admin = ToggleSwitch(
+            "Always run KeyDeck as administrator",
+            startup_card,
+        )
+        self.chk_run_as_admin.setChecked(self._run_as_admin)
+        startup_layout.addWidget(self.chk_run_as_admin)
+        run_as_admin_desc = QLabel(
+            "Shows a Windows UAC prompt when KeyDeck starts. Scheduled startup uses the same privilege level.",
+            startup_card,
+        )
+        run_as_admin_desc.setObjectName("Muted")
+        run_as_admin_desc.setWordWrap(True)
+        startup_layout.addWidget(run_as_admin_desc)
+
+        self.chk_high_priority = ToggleSwitch(
+            "Use high process priority",
+            startup_card,
+        )
+        self.chk_high_priority.setChecked(self._high_priority)
+        startup_layout.addWidget(self.chk_high_priority)
+        high_prio_desc = QLabel(
+            "Requests the Windows HIGH_PRIORITY_CLASS when KeyDeck starts.",
+            startup_card,
+        )
+        high_prio_desc.setObjectName("Muted")
+        high_prio_desc.setWordWrap(True)
+        startup_layout.addWidget(high_prio_desc)
+
+        interaction_card = QFrame(content)
+        interaction_card.setObjectName("Card")
+        interaction_layout = QVBoxLayout(interaction_card)
+        interaction_layout.setContentsMargins(18, 18, 18, 18)
+        interaction_layout.setSpacing(10)
+        interaction_title = QLabel("Interaction", interaction_card)
+        interaction_title.setObjectName("SectionTitle")
+        interaction_layout.addWidget(interaction_title)
+        interaction_description = QLabel(
+            "Configure the global keyboard shortcut used to show or hide the deck.",
+            interaction_card,
+        )
+        interaction_description.setObjectName("PageSubtitle")
+        interaction_description.setWordWrap(True)
+        interaction_layout.addWidget(interaction_description)
+        self.chk_right_alt_toggle = ToggleSwitch(
+            "Use Right Alt to show or hide KeyDeck",
+            interaction_card,
         )
         self.chk_right_alt_toggle.setChecked(self._right_alt_toggle)
-        card_layout.addWidget(self.chk_right_alt_toggle)
+        interaction_layout.addWidget(self.chk_right_alt_toggle)
 
         right_alt_desc = QLabel(
-            "When enabled, Right Alt toggles the deck and is not sent to other apps.",
-            card,
+            "When enabled, Right Alt toggles the deck instead of being sent to other apps.",
+            interaction_card,
         )
-        right_alt_desc.setStyleSheet("color: #71717a; font-size: 11px; margin-left: 34px; background: transparent;")
-        card_layout.addWidget(right_alt_desc)
+        right_alt_desc.setObjectName("Muted")
+        right_alt_desc.setWordWrap(True)
+        interaction_layout.addWidget(right_alt_desc)
 
         self.chk_right_alt_toggle.stateChanged.connect(
             lambda state: setattr(
@@ -1104,37 +1383,104 @@ class SettingsDialog(QDialog):
             )
         )
 
-        card_layout.addSpacing(4)
-
-        # High Priority Checkbox
-        self.chk_high_priority = ModernCheckBox("Enable High Process Priority", card)
-        self.chk_high_priority.setChecked(self._high_priority)
-        card_layout.addWidget(self.chk_high_priority)
-
-        high_prio_desc = QLabel("Sets HIGH_PRIORITY_CLASS (0x80) for instant hotkey response.", card)
-        high_prio_desc.setStyleSheet("color: #71717a; font-size: 11px; margin-left: 34px; background: transparent;")
-        card_layout.addWidget(high_prio_desc)
-
-        # Link auto_start with high_priority
-        def on_auto_start_changed(state):
+        def on_auto_start_changed(state: int) -> None:
             is_checked = (state == Qt.Checked.value or state == 2)
             self._auto_start = is_checked
             self.chk_high_priority.setEnabled(is_checked)
+            self.autostart_task_button.setEnabled(is_checked)
             if not is_checked:
                 self.chk_high_priority.setChecked(False)
 
-        def on_high_priority_changed(state):
+        def on_high_priority_changed(state: int) -> None:
             self._high_priority = (state == Qt.Checked.value or state == 2)
 
         self.chk_auto_start.stateChanged.connect(on_auto_start_changed)
         self.chk_high_priority.stateChanged.connect(on_high_priority_changed)
-        
-        # Trigger initial state
+        self.chk_run_as_admin.stateChanged.connect(
+            lambda state: setattr(
+                self,
+                "_run_as_admin",
+                state == Qt.Checked.value or state == 2,
+            )
+        )
         on_auto_start_changed(Qt.Checked.value if self._auto_start else Qt.Unchecked.value)
+
+        layout.addWidget(startup_card)
+        layout.addWidget(interaction_card)
+        layout.addStretch(1)
+        scroll.setWidget(content)
+        page_layout.addWidget(scroll)
+        return page
+
+    def _build_updates_page(self) -> QWidget:
+        page = QWidget(self)
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(14)
+
+        card = QFrame(page)
+        card.setObjectName("Card")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 20, 20, 20)
+        card_layout.setSpacing(14)
+
+        self.installed_version_label = QLabel(
+            f"Version {self._current_version}",
+            card,
+        )
+        self.installed_version_label.setObjectName("VersionValue")
+        card_layout.addWidget(self.installed_version_label)
+
+        self.update_status_label = QLabel(
+            "Automatic update checks run once every 24 hours.",
+            card,
+        )
+        self.update_status_label.setObjectName("PageSubtitle")
+        self.update_status_label.setWordWrap(True)
+        card_layout.addWidget(self.update_status_label)
+
+        actions = QHBoxLayout()
+        self.check_updates_button = QPushButton("Check for updates", card)
+        self.check_updates_button.setObjectName("QuietButton")
+        self.check_updates_button.clicked.connect(self.update_check_requested.emit)
+        actions.addWidget(self.check_updates_button)
+
+        install_text = (
+            "Download and install"
+            if getattr(sys, "frozen", False)
+            else "Open release page"
+        )
+        self.install_update_button = QPushButton(install_text, card)
+        self.install_update_button.setObjectName("PrimaryButton")
+        self.install_update_button.setVisible(False)
+        self.install_update_button.setEnabled(False)
+        self.install_update_button.clicked.connect(self.update_install_requested.emit)
+        actions.addWidget(self.install_update_button)
+        actions.addStretch(1)
+        card_layout.addLayout(actions)
 
         layout.addWidget(card)
         layout.addStretch(1)
         return page
+
+    def set_update_status(
+        self,
+        status: str,
+        available_version: str | None = None,
+        install_enabled: bool = False,
+    ) -> None:
+        self.update_status_label.setText(status)
+        self.install_update_button.setVisible(available_version is not None)
+        self.install_update_button.setEnabled(install_enabled)
+        if available_version is not None:
+            action = (
+                "Download and install"
+                if getattr(sys, "frozen", False)
+                else "Open release page"
+            )
+            self.install_update_button.setText(
+                f"{action} {available_version}"
+            )
 
     def to_settings(self) -> AppSettings:
         sizes = ["small", "medium", "large"]
@@ -1158,8 +1504,21 @@ class SettingsDialog(QDialog):
             infinite_scroll=self._infinite_scroll,
             auto_start=self._auto_start,
             high_priority=self._high_priority,
+            run_as_admin=self._run_as_admin,
+            disabled_plugins=sorted(self._disabled_plugins),
         )
         return settings.clamp()
+
+    def release_plugin_references(self) -> None:
+        self._preview_generation += 1
+        self._preview_rebuild_pending = False
+        for button in self._button_widgets:
+            button.set_action(None, {}, None)
+        self._button_widgets.clear()
+        self.actions.clear()
+        self._action_by_id.clear()
+        self.plugins.clear()
+        self._plugins_by_id.clear()
 
     def _rebuild_preview(self) -> None:
         self._preview_rebuild_pending = False
@@ -1218,6 +1577,7 @@ class SettingsDialog(QDialog):
             widget.set_action(
                 self._action_for_slot(slot),
                 self._slot_settings.get(str(slot), {}),
+                self._slot_overrides.get(str(slot), {}),
             )
             row_idx = slot // cols
             col_idx = slot % cols
@@ -1251,12 +1611,22 @@ class SettingsDialog(QDialog):
             self._slot_actions[target_slot],
             self._slot_actions[source_slot],
         )
+        for mapping in (self._slot_settings, self._slot_overrides):
+            source_key = str(source_slot)
+            target_key = str(target_slot)
+            source_value = mapping.pop(source_key, None)
+            target_value = mapping.pop(target_key, None)
+            if source_value is not None:
+                mapping[target_key] = source_value
+            if target_value is not None:
+                mapping[source_key] = target_value
         self._refresh_slot(source_slot)
         self._refresh_slot(target_slot)
 
     def _clear_slot(self, slot: int) -> None:
         if 0 <= slot < len(self._slot_actions):
             self._slot_actions[slot] = None
+            self._slot_overrides.pop(str(slot), None)
             self._refresh_slot(slot)
 
     def _open_slot_config(self, slot: int) -> None:
@@ -1287,8 +1657,48 @@ class SettingsDialog(QDialog):
             parent=self,
         )
         if dialog.exec():
-            self._slot_actions[slot] = dialog.selected_action_id()
+            selected_action_id = dialog.selected_action_id()
+            if selected_action_id != current_action_id:
+                self._slot_overrides.pop(str(slot), None)
+            self._slot_actions[slot] = selected_action_id
             self._refresh_slot(slot)
+
+    def _open_button_appearance(self, slot: int) -> None:
+        action = self._action_for_slot(slot)
+        if action is None:
+            return
+
+        slot_key = str(slot)
+        overrides = dict(self._slot_overrides.get(slot_key, {}))
+        current_settings = self._slot_settings.get(slot_key, {})
+        current_title = overrides.get(
+            "title",
+            str(current_settings.get("account_name", action.title)),
+        )
+        dialog = ButtonAppearanceDialog(
+            current_title,
+            overrides.get("icon_path", ""),
+            self,
+        )
+        if not dialog.exec():
+            return
+
+        title = dialog.title_edit.text().strip()
+        icon_path = dialog.icon_edit.text().strip()
+        if title:
+            overrides["title"] = title
+        else:
+            overrides.pop("title", None)
+        if icon_path:
+            overrides["icon_path"] = icon_path
+        else:
+            overrides.pop("icon_path", None)
+
+        if overrides:
+            self._slot_overrides[slot_key] = overrides
+        else:
+            self._slot_overrides.pop(slot_key, None)
+        self._refresh_slot(slot)
 
     def _assign_hotkey(self, slot: int) -> None:
         from PySide6.QtWidgets import QInputDialog
@@ -1318,10 +1728,27 @@ class SettingsDialog(QDialog):
         if self._reload_plugins_callback is None:
             return
         try:
-            self.actions = self._reload_plugins_callback()
+            self.release_plugin_references()
+            result = self._reload_plugins_callback(set(self._disabled_plugins))
+            plugin_result: tuple[list[PluginBase], list[str], list[PluginInfo] | None] | None = None
+            if isinstance(result, tuple):
+                if len(result) == 4:
+                    actions, plugins, errors, available_plugins = result
+                    plugin_result = (plugins, errors, available_plugins)
+                elif len(result) == 3:
+                    actions, plugins, errors = result
+                    plugin_result = (plugins, errors, None)
+                else:
+                    raise ValueError("Invalid plugin reload result")
+            else:
+                actions = result
+            self.actions = actions
             self._action_by_id = {action.action_id: action for action in self.actions}
             self._normalize_slot_actions()
+            if plugin_result is not None:
+                self._populate_plugin_list(*plugin_result)
             self._schedule_preview_rebuild()
+            self.actions_changed.emit(self.actions)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Reload Plugins", str(exc))
 
@@ -1332,8 +1759,12 @@ class SettingsDialog(QDialog):
     def _refresh_slot(self, slot: int) -> None:
         if slot < 0 or slot >= len(self._button_widgets):
             return
-        settings = self._slot_settings.get(str(slot))
-        self._button_widgets[slot].set_action(self._action_for_slot(slot), settings)
+        slot_key = str(slot)
+        self._button_widgets[slot].set_action(
+            self._action_for_slot(slot),
+            self._slot_settings.get(slot_key, {}),
+            self._slot_overrides.get(slot_key),
+        )
 
     def _set_combo_data(self, combo: QComboBox, value: str) -> None:
         for idx in range(combo.count()):
@@ -1344,6 +1775,10 @@ class SettingsDialog(QDialog):
 
     def _normalize_slot_actions(self) -> None:
         valid_action_ids = set(self._action_by_id)
+        preserved_prefixes = tuple(
+            f"{plugin_id}."
+            for plugin_id in self._disabled_plugins
+        )
         aliases: dict[str, str] = {}
         for action in self.actions:
             for alias in action.aliases:
@@ -1352,7 +1787,11 @@ class SettingsDialog(QDialog):
         for page in self._pages:
             normalized: list[str | None] = []
             for action_id in page.slot_actions:
-                if not action_id or action_id in valid_action_ids:
+                if (
+                    not action_id
+                    or action_id in valid_action_ids
+                    or action_id.startswith(preserved_prefixes)
+                ):
                     normalized.append(action_id)
                 else:
                     normalized.append(aliases.get(action_id))

@@ -21,8 +21,16 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 class SquircleButton(QPushButton):
     def __init__(self, size: int, parent: QWidget | None = None) -> None:
         super().__init__("", parent)
+        self.setObjectName("DeckKey")
         self._size = max(32, int(size))
-        self._radius = max(8, int(self._size * 0.18))
+        self._radius = max(4, int(self._size * 0.04))
+        self.setStyleSheet(
+            "QPushButton#DeckKey {"
+            "background: transparent; border: none; padding: 0px;"
+            f"min-width: {self._size}px; max-width: {self._size}px;"
+            f"min-height: {self._size}px; max-height: {self._size}px;"
+            "}"
+        )
         self._avatar = QPixmap()
         self._scaled_avatar = QPixmap()
         self._avatar_mode = "cover"
@@ -117,12 +125,12 @@ class SquircleButton(QPushButton):
         h = float(self.height())
         rect = QRectF(1.0, 1.0, w - 2.0, h - 2.0)
 
-        radius = max(8.0, float(min(w, h) * 0.18))
+        radius = float(self._radius)
         path = QPainterPath()
         path.addRoundedRect(rect, radius, radius)
         painter.setClipPath(path)
 
-        bg_color = QColor("#222222") if self._show_plus else QColor("#2a2a2a")
+        bg_color = QColor("#292929") if self._show_plus else QColor("#303030")
         painter.fillPath(path, bg_color)
 
         if self._show_plus and self._avatar.isNull():
@@ -166,9 +174,9 @@ class SquircleButton(QPushButton):
             painter.fillPath(path, QColor(0, 0, 0, 70))
 
         painter.setClipping(False)
-        border_pen = QPen(QColor("#0078d4"), 2) if self._drop_target else QPen(QColor("#3a3a3a"), 1)
-        painter.setPen(border_pen)
-        painter.drawPath(path)
+        if self._drop_target:
+            painter.setPen(QPen(QColor("#60cdff"), 2))
+            painter.drawPath(path)
 
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 import urllib.parse
 import urllib.request
 import winreg
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
+    QFrame,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -30,6 +32,8 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.ui.controls import SettingsSection, add_dialog_header, style_dialog_buttons
+from keydeck.ui.theme import size_dialog
 
 
 @dataclass
@@ -174,74 +178,137 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("SteamLauncher settings")
         self.setModal(True)
-        self.setMinimumWidth(860)
-        self.setMinimumHeight(520)
+        size_dialog(self, 1120, 820, 900, 640)
         self._profiles = profiles
         self._icon_resolver = icon_resolver
         self._icon_cache: dict[str, str | None] = {}
 
         main = QVBoxLayout(self)
-        row = QHBoxLayout()
-        main.addLayout(row)
+        main.setContentsMargins(24, 22, 24, 20)
+        main.setSpacing(18)
+        add_dialog_header(
+            main,
+            "Steam Launcher",
+            "Manage launch profiles and adjust the button icon preview.",
+            self,
+        )
 
-        self.list_widget = QListWidget(self)
-        row.addWidget(self.list_widget, 1)
+        content = QHBoxLayout()
+        content.setSpacing(18)
+        main.addLayout(content, 1)
 
-        editor_wrap = QVBoxLayout()
-        row.addLayout(editor_wrap, 2)
+        profiles_panel = QFrame(self)
+        profiles_panel.setObjectName("Panel")
+        profiles_layout = QVBoxLayout(profiles_panel)
+        profiles_layout.setContentsMargins(16, 16, 16, 14)
+        profiles_layout.setSpacing(10)
 
+        profiles_title = QLabel("Launch profiles", profiles_panel)
+        profiles_title.setObjectName("SectionTitle")
+        profiles_layout.addWidget(profiles_title)
+        profiles_description = QLabel(
+            "Choose a profile to edit or add another game.",
+            profiles_panel,
+        )
+        profiles_description.setObjectName("PageSubtitle")
+        profiles_description.setWordWrap(True)
+        profiles_layout.addWidget(profiles_description)
+
+        self.list_widget = QListWidget(profiles_panel)
+        profiles_layout.addWidget(self.list_widget, 1)
+
+        profile_actions = QHBoxLayout()
+        add_btn = QPushButton("Add profile", profiles_panel)
+        add_btn.setObjectName("QuietButton")
+        add_btn.clicked.connect(self._add_profile)
+        profile_actions.addWidget(add_btn)
+
+        remove_btn = QPushButton("Remove", profiles_panel)
+        remove_btn.setObjectName("DangerButton")
+        remove_btn.clicked.connect(self._remove_profile)
+        profile_actions.addWidget(remove_btn)
+        profiles_layout.addLayout(profile_actions)
+        content.addWidget(profiles_panel, 1)
+
+        editor_panel = QFrame(self)
+        editor_panel.setObjectName("Card")
+        editor_wrap = QVBoxLayout(editor_panel)
+        editor_wrap.setContentsMargins(18, 18, 18, 18)
+        editor_wrap.setSpacing(18)
+
+        editor_title = QLabel("Profile details", editor_panel)
+        editor_title.setObjectName("SectionTitle")
+        editor_wrap.addWidget(editor_title)
+
+        launch_section = SettingsSection(
+            "Launch options",
+            "Set the button label, Steam app ID, and optional arguments.",
+            editor_panel,
+        )
         form = QFormLayout()
-        editor_wrap.addLayout(form)
+        form.setContentsMargins(0, 0, 0, 0)
+        form.setHorizontalSpacing(18)
+        form.setVerticalSpacing(12)
+        launch_section.content_layout.addLayout(form)
 
-        self.title_edit = QLineEdit(self)
+        self.title_edit = QLineEdit(editor_panel)
         form.addRow("Button title", self.title_edit)
 
-        self.steam_id_edit = QLineEdit(self)
+        self.steam_id_edit = QLineEdit(editor_panel)
         self.steam_id_edit.setPlaceholderText("Game/App Steam ID, e.g. 730")
         form.addRow("Steam ID", self.steam_id_edit)
 
-        self.args_edit = QLineEdit(self)
+        self.args_edit = QLineEdit(editor_panel)
         self.args_edit.setPlaceholderText("Optional launch args")
         form.addRow("Launch args", self.args_edit)
 
-        self.zoom_spin = QDoubleSpinBox(self)
+        icon_section = SettingsSection(
+            "Button icon",
+            "Adjust the icon crop and preview the result before saving.",
+            editor_panel,
+        )
+        icon_layout = QHBoxLayout()
+        icon_layout.setSpacing(18)
+        icon_section.content_layout.addLayout(icon_layout)
+
+        icon_form = QFormLayout()
+        icon_form.setContentsMargins(0, 0, 0, 0)
+        icon_form.setHorizontalSpacing(14)
+        icon_form.setVerticalSpacing(10)
+        icon_layout.addLayout(icon_form, 1)
+
+        self.zoom_spin = QDoubleSpinBox(editor_panel)
         self.zoom_spin.setRange(0.2, 3.0)
         self.zoom_spin.setSingleStep(0.05)
         self.zoom_spin.setDecimals(2)
-        form.addRow("Icon zoom", self.zoom_spin)
+        icon_form.addRow("Zoom", self.zoom_spin)
 
-        self.offset_x_spin = QSpinBox(self)
+        self.offset_x_spin = QSpinBox(editor_panel)
         self.offset_x_spin.setRange(-80, 80)
-        form.addRow("Icon offset X", self.offset_x_spin)
+        icon_form.addRow("Horizontal offset", self.offset_x_spin)
 
-        self.offset_y_spin = QSpinBox(self)
+        self.offset_y_spin = QSpinBox(editor_panel)
         self.offset_y_spin.setRange(-80, 80)
-        form.addRow("Icon offset Y", self.offset_y_spin)
+        icon_form.addRow("Vertical offset", self.offset_y_spin)
 
-        self.preview = IconPreviewWidget(self)
-        editor_wrap.addWidget(self.preview, alignment=Qt.AlignLeft)
+        self.preview = IconPreviewWidget(editor_panel)
+        icon_layout.addWidget(self.preview, 0, Qt.AlignCenter)
 
         hint = QLabel(
-            "Live preview: adjust Zoom / Offset to center icon exactly as you want.",
-            self,
+            "Preview updates as you edit the title or icon settings.",
+            editor_panel,
         )
+        hint.setObjectName("Muted")
         hint.setWordWrap(True)
-        editor_wrap.addWidget(hint)
+        icon_section.content_layout.addWidget(hint)
+        editor_wrap.addWidget(launch_section)
+        editor_wrap.addWidget(icon_section)
         editor_wrap.addStretch(1)
-
-        action_row = QHBoxLayout()
-        main.addLayout(action_row)
-
-        add_btn = QPushButton("Add profile", self)
-        add_btn.clicked.connect(self._add_profile)
-        action_row.addWidget(add_btn)
-
-        remove_btn = QPushButton("Remove profile", self)
-        remove_btn.clicked.connect(self._remove_profile)
-        action_row.addWidget(remove_btn)
-        action_row.addStretch(1)
+        content.addWidget(editor_panel, 2)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        buttons.button(QDialogButtonBox.Ok).setText("Save")
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main.addWidget(buttons)
@@ -335,14 +402,17 @@ class SettingsDialog(QDialog):
         if row < 0 or row >= len(self._profiles):
             return
         p = self._profiles[row]
-        p.title = self.title_edit.text().strip()
+        p.title = self.title_edit.text()
         p.steam_id = self.steam_id_edit.text().strip()
-        p.launch_args = self.args_edit.text().strip()
+        p.launch_args = self.args_edit.text()
         p.icon_zoom = float(self.zoom_spin.value())
         p.icon_offset_x = int(self.offset_x_spin.value())
         p.icon_offset_y = int(self.offset_y_spin.value())
-        self._refresh_list()
-        self.list_widget.setCurrentRow(row)
+        item = self.list_widget.item(row)
+        if item is not None:
+            title = p.title.strip() or f"Profile {row + 1}"
+            sid = p.steam_id.strip() or "no steam id"
+            item.setText(f"{title} [{sid}]")
         self._update_preview()
 
     def _update_preview(self) -> None:
@@ -367,7 +437,8 @@ class SettingsDialog(QDialog):
         if sid in self._icon_cache:
             return self._icon_cache[sid]
         icon = self._icon_resolver(sid)
-        self._icon_cache[sid] = icon
+        if icon is not None:
+            self._icon_cache[sid] = icon
         return icon
 
 
@@ -377,6 +448,8 @@ class Plugin(PluginBase):
 
     def __init__(self, context: PluginContext | None = None) -> None:
         super().__init__(context=context)
+        self._icon_fetch_lock = threading.Lock()
+        self._icon_fetching: set[str] = set()
         self._profiles = self._load_profiles()
         if not self._profiles:
             self._profiles = [
@@ -401,7 +474,7 @@ class Plugin(PluginBase):
                 Action(
                     action_id=f"{self.plugin_id}.{profile.profile_id}",
                     title=title,
-                    callback=lambda p=profile: self._launch(p),
+                    callback=lambda _settings=None, p=profile: self._launch(p),
                     plugin_id=self.plugin_id,
                     settings_callback=self.open_settings,
                     icon_path=icon_path,
@@ -483,64 +556,81 @@ class Plugin(PluginBase):
             return None
 
         cache_dir = self._logo_cache_dir()
-        cache_dir.mkdir(parents=True, exist_ok=True)
-
-        # Prefer client icon assets for list-style mini icon quality.
-        client_cached = [
+        for candidate in (
             cache_dir / f"{appid}_clienticon.png",
             cache_dir / f"{appid}_clienticon.ico",
-        ]
-        for candidate in client_cached:
-            if candidate.exists():
-                return str(candidate)
-
-        client_icon_hash = self._fetch_client_icon_hash(appid)
-        if client_icon_hash:
-            local_steam_games_ico = self._steam_games_ico_path(client_icon_hash)
-            if local_steam_games_ico is not None and local_steam_games_ico.exists():
-                converted = self._convert_ico_to_png(local_steam_games_ico, appid)
-                return converted or str(local_steam_games_ico)
-
-            ico_url = (
-                "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/"
-                f"{appid}/{client_icon_hash}.ico"
-            )
-            ico_file = cache_dir / f"{appid}_clienticon.ico"
-            if ico_file.exists():
-                converted = self._convert_ico_to_png(ico_file, appid)
-                return converted or str(ico_file)
-            if self._download_to_file(ico_url, ico_file):
-                converted = self._convert_ico_to_png(ico_file, appid)
-                return converted or str(ico_file)
-
-        # Fallbacks for apps missing clienticon.
-        fallback_cached = [
             cache_dir / f"{appid}_logo.png",
             cache_dir / f"{appid}_logo.jpg",
             cache_dir / f"{appid}_header.jpg",
-        ]
-        for candidate in fallback_cached:
-            if candidate.exists():
+        ):
+            if candidate.is_file():
                 return str(candidate)
 
-        remote_candidates = [
-            (
-                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/logo.png",
-                cache_dir / f"{appid}_logo.png",
-            ),
-            (
-                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/logo.jpg",
-                cache_dir / f"{appid}_logo.jpg",
-            ),
-            (
-                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg",
-                cache_dir / f"{appid}_header.jpg",
-            ),
-        ]
-        for url, local_file in remote_candidates:
-            if self._download_to_file(url, local_file):
-                return str(local_file)
+        meta_file = cache_dir / f"{appid}_meta.json"
+        try:
+            metadata = json.loads(meta_file.read_text(encoding="utf-8"))
+            icon_hash = str(metadata.get("clienticon", "")).strip()
+        except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+            icon_hash = ""
+        if icon_hash:
+            local_steam_icon = self._steam_games_ico_path(icon_hash)
+            if local_steam_icon is not None and local_steam_icon.is_file():
+                return str(local_steam_icon)
+
+        self._queue_icon_fetch(appid)
         return None
+
+    def _queue_icon_fetch(self, appid: str) -> None:
+        with self._icon_fetch_lock:
+            if appid in self._icon_fetching:
+                return
+            self._icon_fetching.add(appid)
+        thread = threading.Thread(
+            target=self._fetch_game_icon,
+            args=(appid,),
+            name=f"SteamLauncher-icon-{appid}",
+            daemon=True,
+        )
+        thread.start()
+
+    def _fetch_game_icon(self, appid: str) -> None:
+        try:
+            cache_dir = self._logo_cache_dir()
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            client_icon_hash = self._fetch_client_icon_hash(appid)
+            if client_icon_hash:
+                local_icon = self._steam_games_ico_path(client_icon_hash)
+                if local_icon is not None and local_icon.is_file():
+                    return
+
+                icon_file = cache_dir / f"{appid}_clienticon.ico"
+                if not icon_file.is_file():
+                    icon_url = (
+                        "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/"
+                        f"{appid}/{client_icon_hash}.ico"
+                    )
+                    if self._download_to_file(icon_url, icon_file):
+                        return
+
+            for url, local_file in (
+                (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/logo.png",
+                    cache_dir / f"{appid}_logo.png",
+                ),
+                (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/logo.jpg",
+                    cache_dir / f"{appid}_logo.jpg",
+                ),
+                (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg",
+                    cache_dir / f"{appid}_header.jpg",
+                ),
+            ):
+                if not local_file.is_file() and self._download_to_file(url, local_file):
+                    return
+        finally:
+            with self._icon_fetch_lock:
+                self._icon_fetching.discard(appid)
 
     def _logo_cache_dir(self) -> Path:
         if self.context:
@@ -548,7 +638,8 @@ class Plugin(PluginBase):
         return Path(__file__).resolve().parent / "cache"
 
     def _fetch_client_icon_hash(self, appid: str) -> str | None:
-        meta_file = self._logo_cache_dir() / f"{appid}_meta.json"
+        cache_dir = self._logo_cache_dir()
+        meta_file = cache_dir / f"{appid}_meta.json"
         if meta_file.exists():
             try:
                 raw = json.loads(meta_file.read_text(encoding="utf-8"))
@@ -566,6 +657,7 @@ class Plugin(PluginBase):
             common = data.get("data", {}).get(str(appid), {}).get("common", {})
             icon_hash = str(common.get("clienticon", "")).strip()
             if icon_hash:
+                cache_dir.mkdir(parents=True, exist_ok=True)
                 meta_file.write_text(
                     json.dumps({"clienticon": icon_hash}, ensure_ascii=True, indent=2) + "\n",
                     encoding="utf-8",

@@ -1,18 +1,21 @@
 from __future__ import annotations
 
+import getpass
 import http.client
 import os
 import shutil
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QThread, QTimer, Qt, QUrl, Signal
+from PySide6.QtCore import QEvent, QObject, QThread, QTimer, Qt, QUrl, Signal
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from keydeck import __version__
+from keydeck.admin import is_admin, restart_as_admin
 from keydeck.config import (
     ICONS_DIR,
     PLUGINS_DIR,
@@ -21,14 +24,15 @@ from keydeck.config import (
     load_settings,
     save_settings,
 )
-from keydeck.plugin_api import Action
-from keydeck.plugin_manager import PluginManager
+from keydeck.plugin_api import Action, PluginBase
+from keydeck.plugin_manager import PluginInfo, PluginManager
 from keydeck.updates import (
     Release,
     UpdateCancelled,
     check_latest_release,
     download_release,
     launch_update_helper,
+    update_check_due,
 )
 from keydeck.ui.deck_window import DeckWindow
 from keydeck.ui.settings_dialog import SettingsDialog
@@ -81,9 +85,9 @@ class KeyDeckApplication(QObject):
             data_dir=PLUGIN_DATA_DIR,
             legacy_data_dir=legacy_plugins_dir,
         )
-        self.plugin_manager.load_plugins()
+        self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
         self.plugin_manager.start_plugins()
-        self.qt_app.aboutToQuit.connect(self.plugin_manager.stop_plugins)
+        self.qt_app.aboutToQuit.connect(self.plugin_manager.unload_plugins)
         actions = self.plugin_manager.all_actions()
         self._normalize_settings_actions(actions, persist=True)
 
@@ -100,12 +104,23 @@ class KeyDeckApplication(QObject):
         from keydeck.hotkey_manager import HotkeyManager
 
         self._is_settings_open = False
+        self._settings_dialog: SettingsDialog | None = None
         self._update_worker: UpdateWorker | None = None
         self._manual_update_check = False
+        self._update_check_from_settings = False
+        self._available_release: Release | None = None
+        self._retry_autostart = "--retry-autostart" in sys.argv
+        self._autostart_task_needs_retry = False
         self.tray_icon = self._create_tray()
         self.tray_icon.show()
         self.qt_app.aboutToQuit.connect(self._stop_update_worker)
-        QTimer.singleShot(2500, self.check_for_updates)
+        QTimer.singleShot(2500, self._check_updates_if_due)
+        self._update_check_timer = QTimer(self)
+        self._update_check_timer.setInterval(24 * 60 * 60 * 1000)
+        self._update_check_timer.timeout.connect(self._check_updates_if_due)
+        self._update_check_timer.start()
+        if self._retry_autostart:
+            QTimer.singleShot(1000, self._retry_autostart_task)
 
         self.hotkey_manager = HotkeyManager(self._execute_slot, self.toggle_window)
         self.hotkey_manager.apply_hotkeys(
@@ -233,29 +248,91 @@ class KeyDeckApplication(QObject):
                 plugin_errors=self.plugin_manager.errors,
                 reload_plugins_callback=self._load_plugins_for_settings,
                 parent=self.deck_window,
+                refresh_actions_callback=self._current_plugin_actions,
+                available_plugins=self.plugin_manager.discover_plugins(),
             )
+            dialog.actions_changed.connect(self._settings_actions_changed)
+            dialog.update_check_requested.connect(self._check_updates_from_settings)
+            dialog.update_install_requested.connect(self._install_update_from_settings)
+            dialog.autostart_task_requested.connect(self._register_autostart_task)
+            self._settings_dialog = dialog
 
             if dialog.exec():
                 new_settings = dialog.to_settings().clamp()
-                
-                # Check for autostart changes
-                if self.settings.auto_start != new_settings.auto_start:
-                    self._update_autostart_task(new_settings.auto_start)
-                
-                self.settings = new_settings
+                task_changed = (
+                    self._autostart_task_needs_retry
+                    or self.settings.auto_start != new_settings.auto_start
+                    or (
+                        new_settings.auto_start
+                        and self.settings.run_as_admin != new_settings.run_as_admin
+                    )
+                )
+                plugins_changed = (
+                    set(new_settings.disabled_plugins)
+                    != set(self.plugin_manager.disabled_plugin_ids)
+                )
+                if plugins_changed:
+                    dialog.release_plugin_references()
+                    self._clear_deck_plugin_references()
+                    self.settings = new_settings
+                    self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
+                    self.plugin_manager.start_plugins()
+                    actions = self.plugin_manager.all_actions()
+                else:
+                    self.settings = new_settings
+                    actions = dialog.actions
+                self._normalize_settings_actions(
+                    actions,
+                    persist=False,
+                    disabled_plugin_ids=set(self.settings.disabled_plugins),
+                )
                 save_settings(self.settings)
-                self.deck_window.update_actions(dialog.actions)
+                if task_changed:
+                    self._update_autostart_task(
+                        self.settings.auto_start,
+                        self.settings.run_as_admin,
+                    )
+                self.deck_window.update_actions(actions)
                 self.deck_window.apply_settings(self.settings)
                 self.hotkey_manager.apply_hotkeys(
                     self.settings.slot_hotkeys,
                     self.settings.right_alt_toggle,
                 )
+                if plugins_changed and self.plugin_manager.errors:
+                    QMessageBox.warning(
+                        self.deck_window,
+                        "Plugin Loader",
+                        "Some plugins failed to load:\n"
+                        + "\n".join(self.plugin_manager.errors),
+                    )
+            elif set(self.plugin_manager.disabled_plugin_ids) != set(
+                self.settings.disabled_plugins
+            ):
+                dialog.release_plugin_references()
+                self._clear_deck_plugin_references()
+                self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
+                self.plugin_manager.start_plugins()
+                actions = self.plugin_manager.all_actions()
+                self._normalize_settings_actions(
+                    actions,
+                    persist=False,
+                    disabled_plugin_ids=set(self.settings.disabled_plugins),
+                )
+                self.deck_window.update_actions(actions)
+                self.deck_window.apply_settings(self.settings)
         finally:
+            self._settings_dialog = None
             self._is_settings_open = False
 
-    def _update_autostart_task(self, enable: bool) -> None:
+    def _update_autostart_task(
+        self,
+        enable: bool,
+        run_as_admin: bool = False,
+        offer_admin_restart: bool = True,
+    ) -> bool:
         if sys.platform != "win32":
-            return
+            return True
+        temp_xml: str | None = None
         try:
             if enable:
                 import tempfile
@@ -268,6 +345,9 @@ class KeyDeckApplication(QObject):
                 else:
                     arguments = "-m keydeck"
                     working_directory = str(Path(__file__).resolve().parent.parent)
+                username = os.environ.get("USERNAME") or getpass.getuser()
+                domain = os.environ.get("USERDOMAIN")
+                user_id = f"{domain}\\{username}" if domain else username
                 xml_content = f"""<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
@@ -281,8 +361,9 @@ class KeyDeckApplication(QObject):
   </Triggers>
   <Principals>
     <Principal id="Author">
+      <UserId>{escape(user_id)}</UserId>
       <LogonType>InteractiveToken</LogonType>
-      <RunLevel>HighestAvailable</RunLevel>
+      <RunLevel>{"HighestAvailable" if run_as_admin else "LeastPrivilege"}</RunLevel>
     </Principal>
   </Principals>
   <Settings>
@@ -319,17 +400,79 @@ class KeyDeckApplication(QObject):
                 subprocess.run(
                     ["schtasks", "/Create", "/TN", "KeyDeck_AutoStart", "/XML", temp_xml, "/F"],
                     check=True,
+                    capture_output=True,
+                    text=True,
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-                Path(temp_xml).unlink(missing_ok=True)
             else:
                 subprocess.run(
                     ["schtasks", "/Delete", "/TN", "KeyDeck_AutoStart", "/F"],
                     check=True,
+                    capture_output=True,
+                    text=True,
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-        except Exception as e:
-            print(f"Failed to update Task Scheduler: {e}")
+            self._autostart_task_needs_retry = False
+            return True
+        except (OSError, subprocess.CalledProcessError) as exc:
+            self._autostart_task_needs_retry = True
+            details = ""
+            if isinstance(exc, subprocess.CalledProcessError):
+                details = (exc.stderr or exc.stdout or "").strip()
+            message = f"Could not update the Windows Task Scheduler task: {exc}"
+            if details:
+                message = f"{message}\n\n{details}"
+            if offer_admin_restart and not is_admin():
+                prompt = QMessageBox(self.deck_window)
+                prompt.setIcon(QMessageBox.Warning)
+                prompt.setWindowTitle("Task Scheduler")
+                prompt.setText(message)
+                prompt.setInformativeText(
+                    "Windows may require administrator privileges to register this task."
+                )
+                restart_button = prompt.addButton(
+                    "Restart as administrator",
+                    QMessageBox.AcceptRole,
+                )
+                prompt.addButton(QMessageBox.Cancel)
+                prompt.exec()
+                if prompt.clickedButton() == restart_button:
+                    if restart_as_admin(["--retry-autostart"]):
+                        self.qt_app.quit()
+            else:
+                QMessageBox.critical(self.deck_window, "Task Scheduler", message)
+            return False
+        finally:
+            if temp_xml is not None:
+                Path(temp_xml).unlink(missing_ok=True)
+
+    def _register_autostart_task(self, run_as_admin: bool) -> None:
+        self.settings.auto_start = True
+        self.settings.run_as_admin = bool(run_as_admin)
+        save_settings(self.settings)
+        if self._update_autostart_task(True, self.settings.run_as_admin):
+            self.tray_icon.showMessage(
+                "Task Scheduler",
+                "KeyDeck startup task was created or updated.",
+                QSystemTrayIcon.Information,
+            )
+
+    def _retry_autostart_task(self) -> None:
+        success = self._update_autostart_task(
+            self.settings.auto_start,
+            self.settings.run_as_admin,
+            offer_admin_restart=False,
+        )
+        if success:
+            self.tray_icon.showMessage(
+                "Task Scheduler",
+                "KeyDeck startup task was updated.",
+                QSystemTrayIcon.Information,
+            )
+
+    def _check_updates_if_due(self) -> None:
+        if update_check_due(self.settings.last_update_check):
+            self.check_for_updates()
 
 
     def _run_action(self, action: Action | None, slot: int = -1, page_index: int = 0) -> None:
@@ -357,7 +500,8 @@ class KeyDeckApplication(QObject):
         self.deck_window.update_actions(actions)
 
     def reload_plugins(self) -> None:
-        self.plugin_manager.load_plugins()
+        self._clear_deck_plugin_references()
+        self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
         self.plugin_manager.start_plugins()
         actions = self.plugin_manager.all_actions()
         self._normalize_settings_actions(actions, persist=True)
@@ -373,19 +517,60 @@ class KeyDeckApplication(QObject):
                 f"Some plugins failed to load:\n{details}",
             )
 
-    def _load_plugins_for_settings(self) -> list[Action]:
-        self.plugin_manager.load_plugins()
+    def _settings_actions_changed(self, actions: list[Action]) -> None:
+        self.deck_window.update_actions(actions)
+        self.deck_window.apply_settings(self.settings)
+
+    def _clear_deck_plugin_references(self) -> None:
+        self.deck_window.update_actions([])
+        self.qt_app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+    def _current_plugin_actions(self) -> list[Action]:
         actions = self.plugin_manager.all_actions()
         self._normalize_settings_actions(actions, persist=False)
         return actions
 
-    def _normalize_settings_actions(self, actions: list[Action], persist: bool) -> None:
+    def _load_plugins_for_settings(
+        self,
+        disabled_plugin_ids: set[str],
+    ) -> tuple[list[Action], list[PluginBase], list[str], list[PluginInfo]]:
+        self._clear_deck_plugin_references()
+        self.plugin_manager.load_plugins(disabled_plugin_ids)
+        self.plugin_manager.start_plugins()
+        actions = self.plugin_manager.all_actions()
+        self._normalize_settings_actions(
+            actions,
+            persist=False,
+            disabled_plugin_ids=disabled_plugin_ids,
+        )
+        return (
+            actions,
+            self.plugin_manager.get_plugins(),
+            list(self.plugin_manager.errors),
+            self.plugin_manager.discover_plugins(),
+        )
+
+    def _normalize_settings_actions(
+        self,
+        actions: list[Action],
+        persist: bool,
+        disabled_plugin_ids: set[str] | None = None,
+    ) -> None:
         valid_action_ids = {action.action_id for action in actions}
         aliases: dict[str, str] = {}
         for action in actions:
             for alias in action.aliases:
                 aliases[str(alias)] = action.action_id
-        if self.settings.normalize_action_ids(valid_action_ids, aliases) and persist:
+        preserved_plugin_ids = (
+            disabled_plugin_ids
+            if disabled_plugin_ids is not None
+            else set(self.settings.disabled_plugins)
+        )
+        if self.settings.normalize_action_ids(
+            valid_action_ids,
+            aliases,
+            preserved_plugin_ids,
+        ) and persist:
             save_settings(self.settings)
 
     def restart_application(self) -> None:
@@ -398,10 +583,23 @@ class KeyDeckApplication(QObject):
         subprocess.Popen(command, cwd=working_directory, close_fds=True)
         self.qt_app.quit()
 
-    def check_for_updates(self, manual: bool = False) -> None:
+    def check_for_updates(
+        self,
+        manual: bool = False,
+        from_settings: bool = False,
+    ) -> None:
+        if not manual and not update_check_due(self.settings.last_update_check):
+            return
         if self._update_worker is not None and self._update_worker.isRunning():
+            self._manual_update_check = manual
+            self._update_check_from_settings = from_settings
             return
         self._manual_update_check = manual
+        self._update_check_from_settings = from_settings
+        self.settings.last_update_check = time.time()
+        save_settings(self.settings)
+        if from_settings and self._settings_dialog is not None:
+            self._settings_dialog.set_update_status("Checking for updates...")
         worker = UpdateWorker()
         worker.checked.connect(self._on_update_checked)
         worker.failed.connect(self._on_update_check_failed)
@@ -409,14 +607,62 @@ class KeyDeckApplication(QObject):
         self._update_worker = worker
         worker.start()
 
+    def _check_updates_from_settings(self) -> None:
+        self.check_for_updates(manual=True, from_settings=True)
+
+    def _install_update_from_settings(self) -> None:
+        release = self._available_release
+        if release is None or (
+            self._update_worker is not None and self._update_worker.isRunning()
+        ):
+            return
+        if not getattr(sys, "frozen", False):
+            QDesktopServices.openUrl(QUrl(release.page_url))
+            return
+        self._update_check_from_settings = True
+        if self._settings_dialog is not None:
+            self._settings_dialog.set_update_status(
+                f"Downloading and verifying KeyDeck {release.version}...",
+                available_version=release.version,
+            )
+        self._start_update_download(release)
+
+    def _start_update_download(self, release: Release) -> None:
+        self.tray_icon.showMessage(
+            "KeyDeck update",
+            "Downloading and verifying the update...",
+            QSystemTrayIcon.Information,
+        )
+        worker = UpdateWorker(release)
+        worker.downloaded.connect(self._on_update_downloaded)
+        worker.failed.connect(self._on_update_download_failed)
+        worker.finished.connect(self._on_update_worker_finished)
+        self._update_worker = worker
+        worker.start()
+
     def _on_update_checked(self, release: Release | None) -> None:
         if release is None:
+            self._available_release = None
+            if self._update_check_from_settings and self._settings_dialog is not None:
+                self._settings_dialog.set_update_status(
+                    f"KeyDeck {__version__} is up to date."
+                )
+                return
             if self._manual_update_check:
                 QMessageBox.information(
                     self.deck_window,
                     "KeyDeck updates",
                     f"KeyDeck {__version__} is up to date.",
                 )
+            return
+
+        self._available_release = release
+        if self._update_check_from_settings and self._settings_dialog is not None:
+            self._settings_dialog.set_update_status(
+                f"KeyDeck {release.version} is available to install.",
+                available_version=release.version,
+                install_enabled=True,
+            )
             return
 
         message = QMessageBox(self.deck_window)
@@ -442,20 +688,13 @@ class KeyDeckApplication(QObject):
             QDesktopServices.openUrl(QUrl(release.page_url))
             return
 
-        self.tray_icon.showMessage(
-            "KeyDeck update",
-            "Downloading and verifying the update...",
-            QSystemTrayIcon.Information,
-        )
-        worker = UpdateWorker(release)
-        worker.downloaded.connect(self._on_update_downloaded)
-        worker.failed.connect(self._on_update_download_failed)
-        worker.finished.connect(self._on_update_worker_finished)
-        self._update_worker = worker
-        worker.start()
+        self._start_update_download(release)
 
     def _on_update_check_failed(self, error: str) -> None:
         message = f"Could not check for updates: {error}"
+        if self._update_check_from_settings and self._settings_dialog is not None:
+            self._settings_dialog.set_update_status(message)
+            return
         if self._manual_update_check:
             QMessageBox.warning(self.deck_window, "KeyDeck updates", message)
         else:
@@ -466,6 +705,14 @@ class KeyDeckApplication(QObject):
             )
 
     def _on_update_download_failed(self, error: str) -> None:
+        release = self._available_release
+        if self._update_check_from_settings and self._settings_dialog is not None:
+            self._settings_dialog.set_update_status(
+                f"Download failed: {error}",
+                available_version=release.version if release is not None else None,
+                install_enabled=release is not None,
+            )
+            return
         QMessageBox.critical(
             self.deck_window,
             "KeyDeck update",

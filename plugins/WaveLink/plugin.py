@@ -10,15 +10,16 @@ from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QListWidget,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -30,7 +31,14 @@ if str(plugin_dir) not in sys.path:
     sys.path.insert(0, str(plugin_dir))
 
 from keydeck.plugin_api import PluginBase, PluginContext
-from wavelink_api import WaveLinkClient, WaveLinkError
+from keydeck.ui.controls import (
+    SettingsSection,
+    ToggleSwitch,
+    add_dialog_header,
+    style_dialog_buttons,
+)
+from keydeck.ui.theme import size_dialog
+from wavelink_api import WaveLink35Client, WaveLinkClient, WaveLinkError, create_client
 
 
 WH_KEYBOARD_LL = 13
@@ -164,17 +172,17 @@ class WheelCalibrationDialog(QDialog):
 
         self.setWindowTitle("Калибровка колёсика громкости")
         self.setModal(True)
-        self.setMinimumWidth(360)
-        self.setStyleSheet(
-            """
-            QDialog { background-color: #121214; color: #f4f4f5; }
-            QLabel { background-color: transparent; color: #f4f4f5; }
-            QPushButton { background-color: #27272a; color: #f4f4f5; border: 1px solid #3f3f46; border-radius: 6px; padding: 6px 12px; }
-            QPushButton:hover { background-color: #3f3f46; }
-            """
-        )
+        size_dialog(self, 600, 440, 500, 340)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(18)
+        add_dialog_header(
+            layout,
+            "Калибровка колёсика громкости",
+            "Проверьте, какие клавиши отправляет колесо наушников.",
+            self,
+        )
         self.instructions = QLabel(
             "Поверните колесо наушников вниз.\n"
             "Если системная громкость меняется, но это окно не реагирует, устройство не передаёт "
@@ -186,6 +194,7 @@ class WheelCalibrationDialog(QDialog):
         layout.addWidget(self.instructions)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Cancel, self)
+        style_dialog_buttons(buttons)
         buttons.button(QDialogButtonBox.Cancel).setText("Отмена")
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -251,24 +260,17 @@ class KeyboardDiagnosticsDialog(QDialog):
 
         self.setWindowTitle("Проверка клавиш")
         self.setModal(True)
-        self.setMinimumSize(620, 360)
-        self.setStyleSheet(
-            """
-            QDialog { background-color: #121214; color: #f4f4f5; }
-            QLabel { background-color: transparent; color: #f4f4f5; }
-            QListWidget {
-                background-color: #18181b; color: #f4f4f5;
-                border: 1px solid #3f3f46; border-radius: 6px;
-            }
-            QPushButton {
-                background-color: #27272a; color: #f4f4f5;
-                border: 1px solid #3f3f46; border-radius: 6px; padding: 6px 10px;
-            }
-            QPushButton:hover { background-color: #3f3f46; }
-            """
-        )
+        size_dialog(self, 780, 640, 640, 500)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        add_dialog_header(
+            layout,
+            "Проверка клавиш",
+            "События видны только если Windows передаёт их как клавиатурные нажатия.",
+            self,
+        )
         instructions = QLabel(
             "Нажимайте любые клавиши или колесо наушников. Здесь отображаются нажатия и отпускания, "
             "видимые клавиатурному hook Windows. Диагностика не блокирует клавиши и временно "
@@ -287,10 +289,12 @@ class KeyboardDiagnosticsDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close, self)
+        style_dialog_buttons(buttons)
         buttons.button(QDialogButtonBox.Close).setText("Закрыть")
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         clear_button = buttons.addButton("Очистить", QDialogButtonBox.ActionRole)
+        clear_button.setObjectName("QuietButton")
         clear_button.clicked.connect(self._clear_events)
         layout.addWidget(buttons)
 
@@ -351,37 +355,48 @@ class WaveLinkSettingsDialog(QDialog):
 
         self.setWindowTitle("Настройки управления Wave Link")
         self.setModal(True)
-        self.setMinimumWidth(560)
-        self.setStyleSheet(
-            """
-            QDialog { background-color: #121214; color: #f4f4f5; }
-            QLabel { background-color: transparent; color: #f4f4f5; }
-            QComboBox, QSpinBox {
-                background-color: #18181b; color: #f4f4f5;
-                border: 1px solid #3f3f46; border-radius: 6px; padding: 6px 8px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #18181b; color: #f4f4f5;
-                selection-background-color: #2563eb; border: 1px solid #3f3f46;
-            }
-            QPushButton {
-                background-color: #27272a; color: #f4f4f5;
-                border: 1px solid #3f3f46; border-radius: 6px; padding: 6px 10px;
-            }
-            QPushButton:hover { background-color: #3f3f46; }
-            QCheckBox { spacing: 8px; }
-            """
-        )
+        size_dialog(self, 820, 820, 640, 680)
 
         layout = QVBoxLayout(self)
-        form = QFormLayout()
-        layout.addLayout(form)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(16)
+        add_dialog_header(
+            layout,
+            "Управление Wave Link",
+            "Настройте подключение, изменение громкости и назначенные клавиши.",
+            self,
+        )
+
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        content = QWidget(scroll)
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(22)
+
+        connection_section = SettingsSection(
+            "Подключение",
+            "Выберите версию API и канал Wave Link.",
+            content,
+        )
+        connection_form = QFormLayout()
+        connection_form.setContentsMargins(0, 0, 0, 0)
+        connection_form.setHorizontalSpacing(18)
+        connection_form.setVerticalSpacing(12)
+        connection_section.content_layout.addLayout(connection_form)
+
+        self.api_version_combo = QComboBox(self)
+        self.api_version_combo.addItem("Wave Link 3.5 (новый API)", "3.5")
+        self.api_version_combo.addItem("Wave Link 2.0.6 (старый API)", "2.0.6")
+        version_index = self.api_version_combo.findData(plugin.api_version)
+        self.api_version_combo.setCurrentIndex(max(0, version_index))
+        connection_form.addRow("Версия API", self.api_version_combo)
 
         self.channel_combo = QComboBox(self)
         self.channel_combo.setEditable(False)
         self.channel_combo.addItems(channels)
         self.channel_combo.setCurrentText(plugin.channel_name)
-        form.addRow("Канал Wave Link", self.channel_combo)
+        connection_form.addRow("Канал", self.channel_combo)
 
         self.channel_status = QLabel(
             channels_error or "Список каналов получен из Wave Link.",
@@ -389,43 +404,83 @@ class WaveLinkSettingsDialog(QDialog):
         )
         self.channel_status.setWordWrap(True)
         if channels_error:
-            self.channel_status.setStyleSheet("color: #e6a23c;")
-        form.addRow("", self.channel_status)
+            self.channel_status.setObjectName("WarningText")
+        else:
+            self.channel_status.setObjectName("StatusBadge")
+        connection_form.addRow("Состояние", self.channel_status)
+
+        volume_section = SettingsSection(
+            "Изменение громкости",
+            "Задайте, на сколько процентов менять выбранный канал при нажатии.",
+            content,
+        )
+        volume_form = QFormLayout()
+        volume_form.setContentsMargins(0, 0, 0, 0)
+        volume_form.setHorizontalSpacing(18)
+        volume_form.setVerticalSpacing(12)
+        volume_section.content_layout.addLayout(volume_form)
 
         self.step_spin = QSpinBox(self)
         self.step_spin.setRange(1, 100)
         self.step_spin.setValue(plugin.step)
-        form.addRow("Шаг изменения громкости (%)", self.step_spin)
+        volume_form.addRow("Шаг (%)", self.step_spin)
+
+        hotkeys_section = SettingsSection(
+            "Клавиши управления",
+            "Назначьте отдельные клавиши для увеличения и уменьшения громкости.",
+            content,
+        )
+        hotkeys_form = QFormLayout()
+        hotkeys_form.setContentsMargins(0, 0, 0, 0)
+        hotkeys_form.setHorizontalSpacing(18)
+        hotkeys_form.setVerticalSpacing(12)
+        hotkeys_section.content_layout.addLayout(hotkeys_form)
 
         self.increase_button = QPushButton(self)
         self.decrease_button = QPushButton(self)
         self._refresh_hotkey_buttons()
         self.increase_button.clicked.connect(lambda: self._start_hotkey_capture("increase"))
         self.decrease_button.clicked.connect(lambda: self._start_hotkey_capture("decrease"))
-        form.addRow("Клавиша увеличения громкости", self.increase_button)
-        form.addRow("Клавиша уменьшения громкости", self.decrease_button)
+        hotkeys_form.addRow("Увеличить", self.increase_button)
+        hotkeys_form.addRow("Уменьшить", self.decrease_button)
 
-        self.calibrate_button = QPushButton("Откалибровать колесо наушников…", self)
+        tools_section = SettingsSection(
+            "Диагностика",
+            "Проверьте, какие клавиатурные события передаёт устройство.",
+            content,
+        )
+        tools_layout = QHBoxLayout()
+        tools_section.content_layout.addLayout(tools_layout)
+
+        self.calibrate_button = QPushButton("Калибровать колесо наушников…", self)
         self.calibrate_button.clicked.connect(self._calibrate_wheel)
-        form.addRow("", self.calibrate_button)
+        tools_layout.addWidget(self.calibrate_button)
 
         self.diagnostics_button = QPushButton("Проверить все клавиши…", self)
         self.diagnostics_button.clicked.connect(self._check_all_keys)
-        form.addRow("", self.diagnostics_button)
+        tools_layout.addWidget(self.diagnostics_button)
 
-        self.debug_check = QCheckBox(
-            "Вести журнал событий и ошибок (режим отладки)",
-            self,
-        )
+        debug_section = SettingsSection("Журналирование", parent=content)
+        self.debug_check = ToggleSwitch("Вести журнал ошибок и событий Wave Link", self)
         self.debug_check.setToolTip(
             "Записывает только события управления Wave Link в файл wavelink-debug.log; остальные клавиши не журналируются."
         )
         self.debug_check.setChecked(plugin.debug_mode)
-        form.addRow("", self.debug_check)
+        debug_section.content_layout.addWidget(self.debug_check)
+
+        content_layout.addWidget(connection_section)
+        content_layout.addWidget(volume_section)
+        content_layout.addWidget(hotkeys_section)
+        content_layout.addWidget(tools_section)
+        content_layout.addWidget(debug_section)
+        content_layout.addStretch(1)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, self)
         buttons.button(QDialogButtonBox.Save).setText("Сохранить")
         buttons.button(QDialogButtonBox.Cancel).setText("Отмена")
+        style_dialog_buttons(buttons, QDialogButtonBox.StandardButton.Save)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -436,6 +491,7 @@ class WaveLinkSettingsDialog(QDialog):
 
     def get_settings(self) -> dict:
         return {
+            "api_version": str(self.api_version_combo.currentData()),
             "channel_name": self.channel_combo.currentText().strip(),
             "step": self.step_spin.value(),
             "vk_increase": self._hotkeys["increase"],
@@ -536,7 +592,7 @@ class Plugin(PluginBase):
 
     def __init__(self, context: PluginContext | None = None) -> None:
         super().__init__(context)
-        self.client: WaveLinkClient | None = None
+        self.client: WaveLinkClient | WaveLink35Client | None = None
         self._volume_lock = threading.Lock()
         self._volume_events: queue.Queue[bool | None] = queue.Queue()
         self._capture_events: queue.Queue[int] = queue.Queue()
@@ -564,6 +620,7 @@ class Plugin(PluginBase):
         self._debug_handler: logging.FileHandler | None = None
         self._debug_previous_level: int | None = None
         self.channel_name = "Music"
+        self.api_version = "3.5"
         self.step = 5
         self.vk_increase = VK_F13
         self.vk_decrease = VK_F14
@@ -578,7 +635,7 @@ class Plugin(PluginBase):
         if self._volume_worker and self._volume_worker.is_alive():
             return
 
-        self.client = WaveLinkClient()
+        self.client = create_client(self.api_version)
 
         try:
             self.client.connect()
@@ -742,7 +799,7 @@ class Plugin(PluginBase):
 
     def _handle_volume_change(self, channel_name: str, step: int, increase: bool) -> None:
         if self.client is None:
-            self.client = WaveLinkClient()
+            self.client = create_client(self.api_version)
 
         try:
             with self._volume_lock:
@@ -844,6 +901,9 @@ class Plugin(PluginBase):
         self.hotkey_increase = str(raw.get("hotkey_increase", "f13"))
         self.hotkey_decrease = str(raw.get("hotkey_decrease", "f14"))
         self.debug_mode = bool(raw.get("debug_mode", raw.get("debug_all_keys", False)))
+        self.api_version = (
+            "2.0.6" if raw.get("api_version") == "2.0.6" else "3.5"
+        )
 
     @staticmethod
     def _valid_vk(value: object, fallback: int) -> int:
@@ -859,6 +919,7 @@ class Plugin(PluginBase):
         self.context.save_settings(
             {
                 "channel_name": self.channel_name,
+                "api_version": self.api_version,
                 "step": self.step,
                 "hotkey_increase": self.hotkey_increase,
                 "hotkey_decrease": self.hotkey_decrease,
@@ -893,10 +954,11 @@ class Plugin(PluginBase):
 
     def open_settings(self) -> None:
         if self.client is None:
-            self.client = WaveLinkClient()
+            self.client = create_client(self.api_version)
         channels_error = None
         try:
-            channels = self.client.get_channels()
+            with self._volume_lock:
+                channels = self.client.get_channels()
         except WaveLinkError as exc:
             logger.warning("Could not load Wave Link channel list: %s", exc)
             channels = []
@@ -915,6 +977,13 @@ class Plugin(PluginBase):
 
         settings = dialog.get_settings()
         channel_name = settings["channel_name"]
+        new_api_version = settings["api_version"]
+        if new_api_version != self.api_version:
+            with self._volume_lock:
+                if self.client is not None:
+                    self.client.disconnect()
+                self.api_version = new_api_version
+                self.client = create_client(self.api_version)
         with self._state_lock:
             self.channel_name = channel_name
             self.step = settings["step"]

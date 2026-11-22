@@ -8,12 +8,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from keydeck.config import AppSettings
 from keydeck.updates import (
     Release,
     _is_github_url,
     apply_update,
     download_release,
     is_newer_version,
+    update_check_due,
 )
 
 
@@ -22,6 +24,20 @@ class UpdateTests(unittest.TestCase):
         self.assertTrue(is_newer_version("v0.2.0", "0.1.0"))
         self.assertFalse(is_newer_version("0.1.0", "0.1.0"))
         self.assertFalse(is_newer_version("0.0.9", "0.1.0"))
+
+    def test_automatic_update_checks_are_limited_to_24_hours(self) -> None:
+        day = 24 * 60 * 60
+        self.assertTrue(update_check_due(0, now=day))
+        self.assertFalse(update_check_due(100, now=100 + day - 1))
+        self.assertTrue(update_check_due(100, now=100 + day))
+
+    def test_new_settings_fields_round_trip(self) -> None:
+        settings = AppSettings.from_dict(
+            {"run_as_admin": True, "last_update_check": 1_700_000_000.5}
+        )
+        restored = AppSettings.from_dict(settings.to_dict())
+        self.assertTrue(restored.run_as_admin)
+        self.assertEqual(restored.last_update_check, 1_700_000_000.5)
 
     def test_release_urls_are_limited_to_official_repository(self) -> None:
         self.assertTrue(

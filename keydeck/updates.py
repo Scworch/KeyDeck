@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import urllib.error
 from urllib.parse import urlparse
 import urllib.request
@@ -23,6 +24,12 @@ API_URL = "https://api.github.com/repos/Scworch/KeyDeck/releases/latest"
 MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024
 REQUEST_TIMEOUT = 20
 DOWNLOAD_TIMEOUT = 5
+UPDATE_CHECK_INTERVAL_SECONDS = 24 * 60 * 60
+
+
+def update_check_due(last_check: float, now: float | None = None) -> bool:
+    current_time = time.time() if now is None else now
+    return last_check <= 0 or current_time - last_check >= UPDATE_CHECK_INTERVAL_SECONDS
 
 
 class UpdateCancelled(Exception):

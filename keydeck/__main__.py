@@ -21,18 +21,23 @@ def _restart_as_admin() -> bool:
         return True
 
     executable = sys.executable
-    script = Path(sys.argv[0]).resolve()
-    if script.name.casefold() == "__main__.py":
-        arguments = ["-m", "keydeck", *sys.argv[1:]]
+    if getattr(sys, "frozen", False):
+        arguments = sys.argv[1:]
+        working_directory = str(Path(executable).resolve().parent)
     else:
-        arguments = [str(script), *sys.argv[1:]]
+        script = Path(sys.argv[0]).resolve()
+        if script.name.casefold() == "__main__.py":
+            arguments = ["-m", "keydeck", *sys.argv[1:]]
+        else:
+            arguments = [str(script), *sys.argv[1:]]
+        working_directory = str(Path.cwd())
 
     result = ctypes.windll.shell32.ShellExecuteW(
         None,
         "runas",
         executable,
         subprocess.list2cmdline(arguments),
-        str(Path.cwd()),
+        working_directory,
         1,
     )
     if result <= 32:
@@ -42,6 +47,11 @@ def _restart_as_admin() -> bool:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--apply-update":
+        from keydeck.updates import run_updater
+
+        raise SystemExit(run_updater(sys.argv[2:]))
+
     if sys.platform == "win32":
         if not _is_admin():
             if _restart_as_admin():

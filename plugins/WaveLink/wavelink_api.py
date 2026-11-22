@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from typing import Any
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -60,7 +61,7 @@ class WaveLinkClient:
     """
     def __init__(self):
         self.sb_client = None
-        self._volumes: dict[tuple[str, str], int] = {}
+        self._connection_error: Exception | None = None
         self._init_engine()
 
     @staticmethod
@@ -71,8 +72,10 @@ class WaveLinkClient:
 
     def _init_engine(self):
         if not HAS_DLL:
+            self._connection_error = WaveLinkConnectionError("Wave Link support libraries are unavailable")
             return
         try:
+            self._connection_error = None
             self.sb_client = Activator.CreateInstance(client_type)
             connect_method = next(
                 (client_type.GetMethod(name) for name in (
@@ -91,15 +94,17 @@ class WaveLinkClient:
                 time.sleep(0.05)
             if not self.sb_client.IsConnected:
                 raise WaveLinkConnectionError("Wave Link connection timed out")
-        except Exception:
-            pass
+        except Exception as exc:
+            self._connection_error = exc
+            self.sb_client = None
 
     def connect(self) -> None:
         """Connect to Wave Link, safely reusing an existing connection."""
         if not self.is_connected():
             self._init_engine()
         if not self.is_connected():
-            raise WaveLinkConnectionError("Could not connect to Wave Link")
+            details = f": {self._connection_error}" if self._connection_error else ""
+            raise WaveLinkConnectionError(f"Could not connect to Wave Link{details}") from self._connection_error
 
     def disconnect(self) -> None:
         """Release the underlying .NET client when it supports disposal."""
@@ -122,11 +127,45 @@ class WaveLinkClient:
         return False
 
     def get_volume(self, channel_name: str = "Music", mix: str = "local") -> int:
-        return self._volumes.get((channel_name.casefold(), mix.casefold()), 50)
+        channel = self._get_channel_state(channel_name)
+        if channel is None:
+            raise WaveLinkError(f"Wave Link channel was not found: {channel_name}")
+
+        get_volume_method_name = (
+            "_3XB3tF1WiHsaYoklgYkvUrRAcqX"
+            if mix.lower() in ["local", "monitor"]
+            else "_WqwUwaZuBHMERxfKjmqzlkUjF5b"
+        )
+        try:
+            get_volume_method = channel.GetType().GetMethod(get_volume_method_name)
+            if get_volume_method is None:
+                raise WaveLinkError("Wave Link channel volume method was not found")
+            volume = get_volume_method.Invoke(channel, None).Volume
+            return max(0, min(100, int(volume)))
+        except WaveLinkError:
+            raise
+        except Exception as exc:
+            raise WaveLinkError(f"Could not read Wave Link channel volume: {exc}") from exc
+
+    def _get_channel_state(self, channel_name: str) -> Any | None:
+        if not HAS_DLL:
+            raise WaveLinkConnectionError("Wave Link support libraries are unavailable")
+        if not self.is_connected():
+            self.connect()
+
+        full_name = channel_name if "wave link" in channel_name.lower() else f"Wave Link {channel_name}"
+        get_channel_method = client_type.GetMethod("_tNJD4usSlBgn8qDaF5lWUzdH5Gh")
+        if get_channel_method is None:
+            raise WaveLinkError("Wave Link channel lookup method was not found")
+
+        try:
+            return self._await(get_channel_method.Invoke(self.sb_client, [full_name]))
+        except Exception as exc:
+            raise WaveLinkError(f"Could not retrieve Wave Link channel: {exc}") from exc
 
     def set_volume(self, channel_name: str = "Music", value: int = 50, mix: str = "local") -> int:
         target_vol = max(0, min(100, int(value)))
-        full_name = channel_name if "wave link" in channel_name.lower() else f"Wave Link {channel_name.capitalize()}"
+        full_name = channel_name if "wave link" in channel_name.lower() else f"Wave Link {channel_name}"
 
         if not self.is_connected():
             self.connect()
@@ -139,13 +178,45 @@ class WaveLinkClient:
             if set_vol_method is None:
                 raise WaveLinkError("Wave Link volume method was not found")
             self._await(set_vol_method.Invoke(self.sb_client, [full_name, target_mixer, System.Int32(target_vol), System.Boolean(False)]))
-            self._volumes[(channel_name.casefold(), mix.casefold())] = target_vol
         except WaveLinkError:
             raise
         except Exception as exc:
             raise WaveLinkError(f"Could not set Wave Link volume: {exc}") from exc
 
         return target_vol
+
+    def get_channels(self) -> list[str]:
+        """Return the available Wave Link mixer channel names."""
+        if not HAS_DLL:
+            raise WaveLinkConnectionError("Wave Link support libraries are unavailable")
+        if not self.is_connected():
+            self.connect()
+
+        get_channels_method = client_type.GetMethod("_bABIuvuZl1O55sO9WP4iBwsmRp")
+        if get_channels_method is None:
+            raise WaveLinkError("Wave Link channel-list method was not found")
+
+        try:
+            channels = self._await(
+                get_channels_method.Invoke(
+                    self.sb_client,
+                    [System.Boolean(False)],
+                )
+            )
+            names = {
+                str(channel.Name).strip()
+                for channel in channels
+                if channel.Name and str(channel.Name).strip()
+            }
+            names = {
+                name
+                for name in names
+                if self._get_channel_state(name) is not None
+            }
+        except Exception as exc:
+            raise WaveLinkError(f"Could not list Wave Link channels: {exc}") from exc
+
+        return sorted(names, key=str.casefold)
 
     def increase_volume(self, channel_name: str = "Music", step: int = 5, mix: str = "local") -> int:
         current = self.get_volume(channel_name, mix)

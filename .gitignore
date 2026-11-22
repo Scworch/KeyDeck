@@ -39,3 +39,4 @@ plugins/*/settings.json
 plugins/*/*settings*.json
 plugins/*/cache/
 plugins/*/cache/**
+plugins/WaveLink/wavelink-debug.log

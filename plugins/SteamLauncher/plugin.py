@@ -544,7 +544,7 @@ class Plugin(PluginBase):
 
     def _logo_cache_dir(self) -> Path:
         if self.context:
-            return self.context.plugin_dir / "cache"
+            return self.context.writable_dir / "cache"
         return Path(__file__).resolve().parent / "cache"
 
     def _fetch_client_icon_hash(self, appid: str) -> str | None:

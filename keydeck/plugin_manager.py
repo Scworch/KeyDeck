@@ -6,6 +6,7 @@ import importlib.util
 import inspect
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -14,8 +15,15 @@ from keydeck.plugin_api import Action, PluginBase, PluginContext
 
 
 class PluginManager:
-    def __init__(self, plugins_dir: Path) -> None:
+    def __init__(
+        self,
+        plugins_dir: Path,
+        data_dir: Path | None = None,
+        legacy_data_dir: Path | None = None,
+    ) -> None:
         self.plugins_dir = plugins_dir
+        self.data_dir = data_dir or plugins_dir
+        self.legacy_data_dir = legacy_data_dir
         self.plugins: list[PluginBase] = []
         self.script_actions: list[Action] = []
         self.errors: list[str] = []
@@ -103,13 +111,40 @@ class PluginManager:
 
         plugin_id = str(manifest.get("id", plugin_dir.name))
         plugin_name = str(manifest.get("name", plugin_dir.name))
-        settings_file = self._resolve_settings_file(plugin_dir, manifest)
-
-        if plugin_root != settings_file.parent and plugin_root not in settings_file.parents:
+        source_settings_file = self._resolve_settings_file(plugin_dir, manifest)
+        if source_settings_file != plugin_root and plugin_root not in source_settings_file.parents:
             raise ValueError("Settings file must be inside the plugin directory")
+        source_relative = source_settings_file.relative_to(plugin_root)
+        plugin_data_dir = (self.data_dir / plugin_dir.name).resolve()
+        data_root = self.data_dir.resolve()
+        if plugin_data_dir != data_root and data_root not in plugin_data_dir.parents:
+            raise ValueError("Plugin data directory must be inside the data directory")
+        settings_file = (plugin_data_dir / source_relative).resolve()
+        if settings_file != plugin_data_dir and plugin_data_dir not in settings_file.parents:
+            raise ValueError("Settings file must be inside the plugin data directory")
+        legacy_plugin_dir = (
+            self.legacy_data_dir / plugin_dir.name
+            if self.legacy_data_dir is not None
+            else None
+        )
         if not settings_file.exists():
             settings_file.parent.mkdir(parents=True, exist_ok=True)
-            settings_file.write_text("{}\n", encoding="utf-8")
+            legacy_settings_file = (
+                legacy_plugin_dir / source_relative
+                if legacy_plugin_dir is not None
+                else None
+            )
+            if legacy_settings_file is not None and legacy_settings_file.is_file():
+                shutil.copy2(legacy_settings_file, settings_file)
+            elif source_settings_file.is_file() and source_settings_file != settings_file:
+                shutil.copy2(source_settings_file, settings_file)
+            else:
+                settings_file.write_text("{}\n", encoding="utf-8")
+        if legacy_plugin_dir is not None:
+            legacy_cache = legacy_plugin_dir / "cache"
+            target_cache = plugin_data_dir / "cache"
+            if legacy_cache.is_dir() and not target_cache.exists():
+                shutil.copytree(legacy_cache, target_cache)
 
         return PluginContext(
             plugin_id=plugin_id,
@@ -118,6 +153,7 @@ class PluginManager:
             entry_file=entry_file,
             settings_file=settings_file.resolve(),
             manifest=manifest,
+            data_dir=plugin_data_dir,
         )
 
     def _load_manifest(self, manifest_path: Path) -> dict:

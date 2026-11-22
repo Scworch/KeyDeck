@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal, QTimer
@@ -27,7 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from keydeck.config import BUTTON_SIZE_MAP, AppSettings
+from keydeck.config import BUTTON_SIZE_MAP, AppSettings, DeckPage
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.ui.deck_button import SquircleButton
 
@@ -509,7 +510,7 @@ class StreamDeckChassis(QFrame):
         self.setStyleSheet(
             """
             QFrame#Chassis {
-                background-color: #09090b;
+                background-color: #18181b;
                 border: 1px solid #27272a;
                 border-radius: 12px;
             }
@@ -538,12 +539,26 @@ class SettingsDialog(QDialog):
         self.actions = actions
         self._reload_plugins_callback = reload_plugins_callback
         self._action_by_id = {action.action_id: action for action in actions}
-        self._slot_actions = list(settings.slot_actions)
-        self._slot_settings = dict(settings.slot_settings)
+        self._pages = deepcopy(settings.pages) or [
+            DeckPage(
+                rows=settings.rows,
+                columns=settings.columns,
+                slot_actions=list(settings.slot_actions),
+                slot_settings=dict(settings.slot_settings),
+            ).clamp()
+        ]
+        self._selected_page_index = max(
+            0,
+            min(settings.active_page, len(self._pages) - 1),
+        )
         self._slot_hotkeys = dict(settings.slot_hotkeys)
+        self._right_alt_toggle = settings.right_alt_toggle
+        self._infinite_scroll = settings.infinite_scroll
         self._auto_start = settings.auto_start
         self._high_priority = settings.high_priority
         self._button_widgets: list[PreviewDeckButtonWidget] = []
+        self._preview_rebuild_pending = False
+        self._preview_generation = 0
         self._settings_icon_path = str(self._project_root() / "icons" / "settings.svg")
         self._settings_icon = self._load_white_icon(Path(self._settings_icon_path), 16)
         self._normalize_slot_actions()
@@ -551,12 +566,12 @@ class SettingsDialog(QDialog):
         self.setStyleSheet(
             """
             QDialog {
-                background-color: #09090b;
+                background-color: #121214;
                 color: #f4f4f5;
                 font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             }
             QListWidget#Sidebar {
-                background-color: #121215;
+                background-color: #18181b;
                 border: none;
                 border-right: 1px solid #27272a;
                 outline: none;
@@ -687,7 +702,103 @@ class SettingsDialog(QDialog):
         # Sidebar navigation connection
         self.sidebar.currentRowChanged.connect(self.stack.setCurrentIndex)
 
-        self._rebuild_preview()
+        self._refresh_page_selector()
+        self._schedule_preview_rebuild()
+
+    @property
+    def _current_page(self) -> DeckPage:
+        return self._pages[self._selected_page_index]
+
+    @property
+    def _slot_actions(self) -> list[str | None]:
+        return self._current_page.slot_actions
+
+    @_slot_actions.setter
+    def _slot_actions(self, actions: list[str | None]) -> None:
+        self._current_page.slot_actions = actions
+
+    @property
+    def _slot_settings(self) -> dict[str, dict]:
+        return self._current_page.slot_settings
+
+    @_slot_settings.setter
+    def _slot_settings(self, settings: dict[str, dict]) -> None:
+        self._current_page.slot_settings = settings
+
+    def _refresh_page_selector(self) -> None:
+        self.page_selector.blockSignals(True)
+        self.page_selector.clear()
+        for page in self._pages:
+            self.page_selector.addItem(page.name, page.page_id)
+        self.page_selector.setCurrentIndex(self._selected_page_index)
+        self.page_selector.blockSignals(False)
+        self.remove_page_btn.setEnabled(self._selected_page_index > 0)
+
+    def _select_page(self, page_index: int) -> None:
+        if not 0 <= page_index < len(self._pages):
+            return
+        self._selected_page_index = page_index
+        page = self._current_page
+        self.rows_spin.setValue(page.rows)
+        self.columns_spin.setValue(page.columns)
+        self.rows_label.setText(f"Rows: {page.rows}")
+        self.columns_label.setText(f"Columns: {page.columns}")
+        self._refresh_page_selector()
+        self._schedule_preview_rebuild()
+
+    def _add_page(self) -> None:
+        existing_names = {page.name.casefold() for page in self._pages}
+        page_number = 1
+        while f"page {page_number}".casefold() in existing_names:
+            page_number += 1
+        self._pages.append(
+            DeckPage(
+                name=f"Page {page_number}",
+                rows=self.rows_spin.value(),
+                columns=self.columns_spin.value(),
+            ).clamp()
+        )
+        self._selected_page_index = len(self._pages) - 1
+        self._refresh_page_selector()
+        self._select_page(self._selected_page_index)
+
+    def _rename_page(self) -> None:
+        from PySide6.QtWidgets import QInputDialog
+
+        page = self._current_page
+        name, accepted = QInputDialog.getText(
+            self,
+            "Rename page",
+            "Page name:",
+            text=page.name,
+        )
+        if accepted and name.strip():
+            page.name = name.strip()
+            self._refresh_page_selector()
+
+    def _remove_page(self) -> None:
+        if self._selected_page_index == 0:
+            return
+        page = self._current_page
+        answer = QMessageBox.question(
+            self,
+            "Remove page",
+            f"Remove '{page.name}' and all of its button assignments?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+
+        self._slot_hotkeys = {
+            key: value
+            for key, value in self._slot_hotkeys.items()
+            if not key.startswith(f"{page.page_id}:")
+        }
+        self._pages.pop(self._selected_page_index)
+        self._selected_page_index = min(self._selected_page_index, len(self._pages) - 1)
+        self._refresh_page_selector()
+        self._select_page(self._selected_page_index)
 
     def _build_deck_editor_page(self, settings: AppSettings) -> QWidget:
         page = QWidget(self)
@@ -706,6 +817,44 @@ class SettingsDialog(QDialog):
         header_col.addWidget(sub)
         layout.addLayout(header_col)
 
+        page_controls = QHBoxLayout()
+        page_controls.addWidget(QLabel("Buttons page:", page))
+        self.page_selector = QComboBox(page)
+        self.page_selector.setMinimumWidth(140)
+        self.page_selector.currentIndexChanged.connect(self._select_page)
+        page_controls.addWidget(self.page_selector)
+
+        self.add_page_btn = QPushButton("Add Page", page)
+        self.add_page_btn.setObjectName("UiButton")
+        self.add_page_btn.clicked.connect(self._add_page)
+        page_controls.addWidget(self.add_page_btn)
+
+        self.rename_page_btn = QPushButton("Rename", page)
+        self.rename_page_btn.setObjectName("UiButton")
+        self.rename_page_btn.clicked.connect(self._rename_page)
+        page_controls.addWidget(self.rename_page_btn)
+
+        self.remove_page_btn = QPushButton("Remove", page)
+        self.remove_page_btn.setObjectName("UiButton")
+        self.remove_page_btn.clicked.connect(self._remove_page)
+        page_controls.addWidget(self.remove_page_btn)
+        page_controls.addStretch(1)
+        layout.addLayout(page_controls)
+
+        self.chk_infinite_scroll = ModernCheckBox(
+            "Infinite page scrolling (last page wraps to first)",
+            page,
+        )
+        self.chk_infinite_scroll.setChecked(self._infinite_scroll)
+        self.chk_infinite_scroll.stateChanged.connect(
+            lambda state: setattr(
+                self,
+                "_infinite_scroll",
+                state == Qt.Checked.value or state == 2,
+            )
+        )
+        layout.addWidget(self.chk_infinite_scroll)
+
         # Settings Card (Rows / Cols / Size)
         card_controls = QFrame(page)
         card_controls.setObjectName("Card")
@@ -717,36 +866,36 @@ class SettingsDialog(QDialog):
 
         # Rows Slider
         rows_col = QVBoxLayout()
-        rows_lbl = QLabel(f"Rows: {settings.rows}", card_controls)
-        rows_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.rows_label = QLabel(f"Rows: {self._current_page.rows}", card_controls)
+        self.rows_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
         self.rows_spin = QSlider(Qt.Horizontal, card_controls)
         self.rows_spin.setRange(1, 8)
-        self.rows_spin.setValue(settings.rows)
+        self.rows_spin.setValue(self._current_page.rows)
         self.rows_spin.setFixedWidth(120)
-        self.rows_spin.valueChanged.connect(lambda v: rows_lbl.setText(f"Rows: {v}"))
-        self.rows_spin.valueChanged.connect(self._rebuild_preview)
-        rows_col.addWidget(rows_lbl)
+        self.rows_spin.valueChanged.connect(lambda v: self.rows_label.setText(f"Rows: {v}"))
+        self.rows_spin.valueChanged.connect(self._schedule_preview_rebuild)
+        rows_col.addWidget(self.rows_label)
         rows_col.addWidget(self.rows_spin)
         ctrl_layout.addLayout(rows_col)
 
         # Columns Slider
         cols_col = QVBoxLayout()
-        cols_lbl = QLabel(f"Columns: {settings.columns}", card_controls)
-        cols_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.columns_label = QLabel(f"Columns: {self._current_page.columns}", card_controls)
+        self.columns_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
         self.columns_spin = QSlider(Qt.Horizontal, card_controls)
         self.columns_spin.setRange(1, 8)
-        self.columns_spin.setValue(settings.columns)
+        self.columns_spin.setValue(self._current_page.columns)
         self.columns_spin.setFixedWidth(120)
-        self.columns_spin.valueChanged.connect(lambda v: cols_lbl.setText(f"Columns: {v}"))
-        self.columns_spin.valueChanged.connect(self._rebuild_preview)
-        cols_col.addWidget(cols_lbl)
+        self.columns_spin.valueChanged.connect(lambda v: self.columns_label.setText(f"Columns: {v}"))
+        self.columns_spin.valueChanged.connect(self._schedule_preview_rebuild)
+        cols_col.addWidget(self.columns_label)
         cols_col.addWidget(self.columns_spin)
         ctrl_layout.addLayout(cols_col)
 
         # Button Size Slider
         size_col = QVBoxLayout()
-        size_lbl = QLabel(f"Size: {settings.button_size.capitalize()}", card_controls)
-        size_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
+        self.size_label = QLabel(f"Size: {settings.button_size.capitalize()}", card_controls)
+        self.size_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #a1a1aa; background: transparent;")
         self.size_spin = QSlider(Qt.Horizontal, card_controls)
         self.size_spin.setRange(0, 2)
         sizes = ["small", "medium", "large"]
@@ -755,9 +904,9 @@ class SettingsDialog(QDialog):
         except ValueError:
             self.size_spin.setValue(1)
         self.size_spin.setFixedWidth(120)
-        self.size_spin.valueChanged.connect(lambda v: size_lbl.setText(f"Size: {sizes[v].capitalize()}"))
-        self.size_spin.valueChanged.connect(self._rebuild_preview)
-        size_col.addWidget(size_lbl)
+        self.size_spin.valueChanged.connect(lambda v: self.size_label.setText(f"Size: {sizes[v].capitalize()}"))
+        self.size_spin.valueChanged.connect(self._schedule_preview_rebuild)
+        size_col.addWidget(self.size_label)
         size_col.addWidget(self.size_spin)
         ctrl_layout.addLayout(size_col)
 
@@ -933,6 +1082,28 @@ class SettingsDialog(QDialog):
         auto_start_desc.setStyleSheet("color: #71717a; font-size: 11px; margin-left: 34px; background: transparent;")
         card_layout.addWidget(auto_start_desc)
 
+        self.chk_right_alt_toggle = ModernCheckBox(
+            "Use Right Alt to Show / Hide KeyDeck",
+            card,
+        )
+        self.chk_right_alt_toggle.setChecked(self._right_alt_toggle)
+        card_layout.addWidget(self.chk_right_alt_toggle)
+
+        right_alt_desc = QLabel(
+            "When enabled, Right Alt toggles the deck and is not sent to other apps.",
+            card,
+        )
+        right_alt_desc.setStyleSheet("color: #71717a; font-size: 11px; margin-left: 34px; background: transparent;")
+        card_layout.addWidget(right_alt_desc)
+
+        self.chk_right_alt_toggle.stateChanged.connect(
+            lambda state: setattr(
+                self,
+                "_right_alt_toggle",
+                state == Qt.Checked.value or state == 2,
+            )
+        )
+
         card_layout.addSpacing(4)
 
         # High Priority Checkbox
@@ -971,20 +1142,33 @@ class SettingsDialog(QDialog):
             size_str = sizes[self.size_spin.value()]
         except IndexError:
             size_str = "medium"
-            
+        self._current_page.rows = self.rows_spin.value()
+        self._current_page.columns = self.columns_spin.value()
+        first_page = self._pages[0]
         settings = AppSettings(
-            rows=self.rows_spin.value(),
-            columns=self.columns_spin.value(),
+            rows=first_page.rows,
+            columns=first_page.columns,
             button_size=size_str,
-            slot_actions=self._slot_actions,
-            slot_settings=self._slot_settings,
+            slot_actions=list(first_page.slot_actions),
+            slot_settings=dict(first_page.slot_settings),
             slot_hotkeys=self._slot_hotkeys,
+            right_alt_toggle=self._right_alt_toggle,
+            pages=self._pages,
+            active_page=self._selected_page_index,
+            infinite_scroll=self._infinite_scroll,
             auto_start=self._auto_start,
             high_priority=self._high_priority,
         )
         return settings.clamp()
 
     def _rebuild_preview(self) -> None:
+        self._preview_rebuild_pending = False
+        self._preview_generation += 1
+        generation = self._preview_generation
+        page = self._current_page
+        page.rows = self.rows_spin.value()
+        page.columns = self.columns_spin.value()
+        page.clamp()
         while self.preview_grid.count():
             item = self.preview_grid.takeAt(0)
             widget = item.widget()
@@ -992,12 +1176,11 @@ class SettingsDialog(QDialog):
                 widget.deleteLater()
         self._button_widgets = []
 
-        rows = self.rows_spin.value()
-        cols = self.columns_spin.value()
+        rows = page.rows
+        cols = page.columns
         total = rows * cols
         if len(self._slot_actions) < total:
             self._slot_actions.extend([None] * (total - len(self._slot_actions)))
-        self._slot_actions = self._slot_actions[:total]
 
         sizes = ["small", "medium", "large"]
         try:
@@ -1006,7 +1189,22 @@ class SettingsDialog(QDialog):
             size_str = "medium"
             
         button_size = BUTTON_SIZE_MAP.get(size_str, BUTTON_SIZE_MAP["medium"])
-        for slot in range(total):
+        self._build_preview_chunk(generation, page, button_size, total, 0)
+
+    def _build_preview_chunk(
+        self,
+        generation: int,
+        page: DeckPage,
+        button_size: int,
+        total: int,
+        start_slot: int,
+    ) -> None:
+        if generation != self._preview_generation:
+            return
+
+        end_slot = min(start_slot + 8, total)
+        cols = page.columns
+        for slot in range(start_slot, end_slot):
             widget = PreviewDeckButtonWidget(
                 slot,
                 button_size,
@@ -1025,6 +1223,24 @@ class SettingsDialog(QDialog):
             col_idx = slot % cols
             self.preview_grid.addWidget(widget, row_idx, col_idx, alignment=Qt.AlignCenter)
             self._button_widgets.append(widget)
+
+        if end_slot < total:
+            QTimer.singleShot(
+                0,
+                lambda: self._build_preview_chunk(
+                    generation,
+                    page,
+                    button_size,
+                    total,
+                    end_slot,
+                ),
+            )
+
+    def _schedule_preview_rebuild(self) -> None:
+        if self._preview_rebuild_pending:
+            return
+        self._preview_rebuild_pending = True
+        QTimer.singleShot(0, self._rebuild_preview)
 
     def _swap_slots(self, source_slot: int, target_slot: int) -> None:
         if source_slot == target_slot:
@@ -1076,19 +1292,20 @@ class SettingsDialog(QDialog):
 
     def _assign_hotkey(self, slot: int) -> None:
         from PySide6.QtWidgets import QInputDialog
-        current_hotkey = self._slot_hotkeys.get(str(slot), "")
+        hotkey_key = str(slot) if self._selected_page_index == 0 else f"{self._current_page.page_id}:{slot}"
+        current_hotkey = self._slot_hotkeys.get(hotkey_key, "")
         text, ok = QInputDialog.getText(
             self,
             "Assign Hotkey",
-            f"Enter hotkey for slot {slot + 1} (e.g. 'f16', 'ctrl+shift+a'):",
+            f"Enter hotkey for button {slot + 1} on '{self._current_page.name}' (e.g. 'f16', 'ctrl+shift+a'):",
             text=current_hotkey
         )
         if ok:
             val = text.strip()
             if val:
-                self._slot_hotkeys[str(slot)] = val
+                self._slot_hotkeys[hotkey_key] = val
             else:
-                self._slot_hotkeys.pop(str(slot), None)
+                self._slot_hotkeys.pop(hotkey_key, None)
 
     def _open_action_settings(self, slot: int, action: Action) -> None:
         if action.action_settings_callback:
@@ -1104,7 +1321,7 @@ class SettingsDialog(QDialog):
             self.actions = self._reload_plugins_callback()
             self._action_by_id = {action.action_id: action for action in self.actions}
             self._normalize_slot_actions()
-            self._rebuild_preview()
+            self._schedule_preview_rebuild()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Reload Plugins", str(exc))
 
@@ -1132,15 +1349,14 @@ class SettingsDialog(QDialog):
             for alias in action.aliases:
                 aliases[str(alias)] = action.action_id
 
-        normalized: list[str | None] = []
-        for action_id in self._slot_actions:
-            if not action_id:
-                normalized.append(None)
-            elif action_id in valid_action_ids:
-                normalized.append(action_id)
-            else:
-                normalized.append(aliases.get(action_id))
-        self._slot_actions = normalized
+        for page in self._pages:
+            normalized: list[str | None] = []
+            for action_id in page.slot_actions:
+                if not action_id or action_id in valid_action_ids:
+                    normalized.append(action_id)
+                else:
+                    normalized.append(aliases.get(action_id))
+            page.slot_actions = normalized
 
     def _project_root(self) -> Path:
         return Path(__file__).resolve().parents[2]

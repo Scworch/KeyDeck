@@ -1,7 +1,20 @@
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
+
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFontMetrics, QIcon, QImage, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QFontMetrics,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QBitmap,
+    QRegion,
+)
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 
@@ -11,6 +24,7 @@ class SquircleButton(QPushButton):
         self._size = max(32, int(size))
         self._radius = max(8, int(self._size * 0.18))
         self._avatar = QPixmap()
+        self._scaled_avatar = QPixmap()
         self._avatar_mode = "cover"
         self._avatar_zoom = 1.0
         self._avatar_offset_x = 0
@@ -45,21 +59,33 @@ class SquircleButton(QPushButton):
 
         if not icon_path:
             self._avatar = QPixmap()
+            self._scaled_avatar = QPixmap()
             self._avatar_mode = "cover"
         else:
-            # For .ico files, QIcon picks the best embedded size variant.
-            icon = QIcon(icon_path)
-            if not icon.isNull():
-                wanted = max(256, self._size * 4)
-                pix = icon.pixmap(wanted, wanted)
-                source = pix if not pix.isNull() else QPixmap(icon_path)
-            else:
-                source = QPixmap(icon_path)
-            self._avatar = self._normalize_pixmap(self._trim_transparent_padding(source))
             if icon_mode == "centered":
                 self._avatar_mode = "centered"
             else:
                 self._avatar_mode = "contain"
+            path = str(Path(icon_path).resolve())
+            try:
+                stat = Path(path).stat()
+                modified_ns, file_size = stat.st_mtime_ns, stat.st_size
+            except OSError:
+                modified_ns, file_size = 0, 0
+            self._avatar = self._load_avatar_pixmap(
+                path,
+                self._size,
+                modified_ns,
+                file_size,
+            )
+            self._scaled_avatar = self._load_scaled_avatar_pixmap(
+                path,
+                self._size,
+                modified_ns,
+                file_size,
+                self._avatar_mode,
+                self._avatar_zoom,
+            )
         self.update()
 
     def enterEvent(self, event) -> None:  # noqa: N802
@@ -112,40 +138,26 @@ class SquircleButton(QPushButton):
             painter.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
             painter.setClipPath(path)
 
-        if not self._avatar.isNull():
-            if self._avatar_mode == "centered":
-                # Dedicated mode: keep icon compact and strictly centered.
-                scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * 0.74 * self._avatar_zoom),
-                    int(rect.height() * 0.74 * self._avatar_zoom),
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation,
-                ))
-            elif self._avatar_mode == "contain":
-                # Fill the tile by the image's wider dimension; the tile clip trims overflow.
-                scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * self._avatar_zoom),
-                    int(rect.height() * self._avatar_zoom),
-                    Qt.KeepAspectRatioByExpanding,
-                    Qt.SmoothTransformation,
-                ))
-            else:
-                # Cover scaling: fill full button and crop overflow in clipped shape.
-                scaled = self._normalize_pixmap(self._avatar.scaled(
-                    int(rect.width() * 1.18 * self._avatar_zoom),
-                    int(rect.height() * 1.18 * self._avatar_zoom),
-                    Qt.KeepAspectRatioByExpanding,
-                    Qt.SmoothTransformation,
-                ))
-            target = QRectF(0.0, 0.0, float(scaled.width()), float(scaled.height()))
+        if not self._scaled_avatar.isNull():
+            target = QRectF(
+                0.0,
+                0.0,
+                float(self._scaled_avatar.width()),
+                float(self._scaled_avatar.height()),
+            )
             target.moveCenter(
                 QPointF(
                     rect.center().x() + self._avatar_offset_x,
                     rect.center().y() + self._avatar_offset_y,
                 )
             )
-            source = QRectF(0.0, 0.0, float(scaled.width()), float(scaled.height()))
-            painter.drawPixmap(target, scaled, source)
+            source = QRectF(
+                0.0,
+                0.0,
+                float(self._scaled_avatar.width()),
+                float(self._scaled_avatar.height()),
+            )
+            painter.drawPixmap(target, self._scaled_avatar, source)
 
         # Hover/press dim overlay goes on top of icon/background alike.
         if self._pressed:
@@ -161,31 +173,74 @@ class SquircleButton(QPushButton):
 
 
 
-    def _trim_transparent_padding(self, pixmap: QPixmap) -> QPixmap:
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _load_avatar_pixmap(
+        icon_path: str,
+        size: int,
+        modified_ns: int,
+        file_size: int,
+    ) -> QPixmap:
+        _ = modified_ns, file_size
+        icon = QIcon(icon_path)
+        if not icon.isNull():
+            pixmap = icon.pixmap(max(256, size * 4), max(256, size * 4))
+            source = pixmap if not pixmap.isNull() else QPixmap(icon_path)
+        else:
+            source = QPixmap(icon_path)
+        trimmed = SquircleButton._trim_transparent_padding(source)
+        return SquircleButton._normalize_pixmap(trimmed)
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _load_scaled_avatar_pixmap(
+        icon_path: str,
+        size: int,
+        modified_ns: int,
+        file_size: int,
+        icon_mode: str,
+        zoom: float,
+    ) -> QPixmap:
+        avatar = SquircleButton._load_avatar_pixmap(
+            icon_path,
+            size,
+            modified_ns,
+            file_size,
+        )
+        if avatar.isNull():
+            return QPixmap()
+
+        rect_width = float(size - 2)
+        rect_height = float(size - 2)
+        if icon_mode == "centered":
+            width, height = rect_width * 0.74 * zoom, rect_height * 0.74 * zoom
+            aspect_mode = Qt.AspectRatioMode.KeepAspectRatio
+        elif icon_mode == "contain":
+            width, height = rect_width * zoom, rect_height * zoom
+            aspect_mode = Qt.AspectRatioMode.KeepAspectRatioByExpanding
+        else:
+            width, height = rect_width * 1.18 * zoom, rect_height * 1.18 * zoom
+            aspect_mode = Qt.AspectRatioMode.KeepAspectRatioByExpanding
+
+        return avatar.scaled(
+            max(1, int(width)),
+            max(1, int(height)),
+            aspect_mode,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+    @staticmethod
+    def _trim_transparent_padding(pixmap: QPixmap) -> QPixmap:
         if pixmap.isNull():
             return QPixmap()
-        image = pixmap.toImage().convertToFormat(QImage.Format_ARGB32)
-
-        left = image.width()
-        right = -1
-        top = image.height()
-        bottom = -1
-
-        for y in range(image.height()):
-            for x in range(image.width()):
-                alpha = QColor.fromRgba(image.pixel(x, y)).alpha()
-                if alpha > 0:
-                    left = min(left, x)
-                    right = max(right, x)
-                    top = min(top, y)
-                    bottom = max(bottom, y)
-
-        if right < left or bottom < top:
+        alpha_mask = pixmap.toImage().createAlphaMask()
+        bounds = QRegion(QBitmap.fromImage(alpha_mask)).boundingRect()
+        if bounds.isEmpty():
             return pixmap
+        return pixmap.copy(bounds)
 
-        return pixmap.copy(left, top, right - left + 1, bottom - top + 1)
-
-    def _normalize_pixmap(self, pixmap: QPixmap) -> QPixmap:
+    @staticmethod
+    def _normalize_pixmap(pixmap: QPixmap) -> QPixmap:
         if pixmap.isNull():
             return QPixmap()
         normalized = QPixmap.fromImage(pixmap.toImage())

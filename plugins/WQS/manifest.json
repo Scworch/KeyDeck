@@ -1,0 +1,7 @@
+{
+  "id": "WQS",
+  "name": "WQS - Windows Quick Start",
+  "version": "1.0.0",
+  "entry": "plugin.py",
+  "settings": "settings.json"
+}

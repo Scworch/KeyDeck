@@ -11,26 +11,66 @@ NVCPL_SETTING_VSR_VALUE = 0x317
 NVCPL_COMMIT = 0x00010000
 
 
-def _nvcpl_value() -> int:
+def _nvcpl_candidates() -> list[str]:
+    candidates: list[str] = []
+    for variable in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"):
+        root = os.environ.get(variable)
+        if root:
+            path = os.path.join(
+                root,
+                "NVIDIA Corporation",
+                "NVIDIA App",
+                "NvCpl",
+                "NvCpl.dll",
+            )
+            if path not in candidates:
+                candidates.append(path)
+    return candidates
+
+
+def _load_nvcpl():
     if os.name != "nt":
         raise RuntimeError("NVIDIA VSR control is only supported on Windows")
 
-    dll_path = (
-        os.environ.get("ProgramFiles", r"C:\Program Files")
-        + r"\NVIDIA Corporation\NVIDIA App\NvCpl\NvCpl.dll"
-    )
+    dll_path = next((path for path in _nvcpl_candidates() if os.path.isfile(path)), None)
+    if dll_path is None:
+        raise RuntimeError(
+            "NVIDIA RTX Video Super Resolution requires a supported NVIDIA RTX GPU, "
+            "a compatible driver, and the NVIDIA App. NvCpl.dll was not found."
+        )
     try:
         dll = ctypes.WinDLL(dll_path)
+        required_exports = (
+            "NvCplApiIsUxdServiceRunning",
+            "NvCplApiInit",
+            "NvCplApiGetSetting",
+            "NvCplApiSetSetting",
+            "NvCplApiExecute",
+        )
+        if any(not hasattr(dll, name) for name in required_exports):
+            raise RuntimeError(
+                "The installed NVIDIA App version does not expose the VSR control API"
+            )
+        is_running = dll.NvCplApiIsUxdServiceRunning
+        is_running.argtypes = [ctypes.POINTER(ctypes.c_bool)]
+        is_running.restype = ctypes.c_int32
+        running = ctypes.c_bool()
+        if is_running(ctypes.byref(running)) != 0 or not running.value:
+            raise RuntimeError(
+                "NVIDIA UXD service is not available; install/update the NVIDIA driver and App"
+            )
+    except AttributeError as exc:
+        raise RuntimeError(
+            "The installed NVIDIA App does not expose the VSR control API"
+        ) from exc
     except OSError as exc:
         raise RuntimeError(f"Cannot load NVIDIA NvCpl API: {exc}") from exc
 
-    is_running = dll.NvCplApiIsUxdServiceRunning
-    is_running.argtypes = [ctypes.POINTER(ctypes.c_bool)]
-    is_running.restype = ctypes.c_int32
-    running = ctypes.c_bool()
-    if is_running(ctypes.byref(running)) != 0 or not running.value:
-        raise RuntimeError("NVIDIA UXD service is not available")
+    return dll
 
+
+def _nvcpl_value() -> int:
+    dll = _load_nvcpl()
     init = dll.NvCplApiInit
     init.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
     init.restype = ctypes.c_int32
@@ -73,17 +113,7 @@ def read_vsr() -> dict[str, Any]:
 def set_vsr(mode: str) -> dict[str, Any]:
     if mode not in MODE_TO_VALUE:
         raise ValueError(f"Unsupported VSR mode: {mode}")
-    if os.name != "nt":
-        raise RuntimeError("NVIDIA VSR control is only supported on Windows")
-
-    dll_path = (
-        os.environ.get("ProgramFiles", r"C:\Program Files")
-        + r"\NVIDIA Corporation\NVIDIA App\NvCpl\NvCpl.dll"
-    )
-    try:
-        dll = ctypes.WinDLL(dll_path)
-    except OSError as exc:
-        raise RuntimeError(f"Cannot load NVIDIA NvCpl API: {exc}") from exc
+    dll = _load_nvcpl()
 
     init = dll.NvCplApiInit
     init.argtypes = [ctypes.c_void_p, ctypes.c_void_p]

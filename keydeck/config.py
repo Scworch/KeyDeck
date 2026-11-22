@@ -2,15 +2,33 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+IS_FROZEN = bool(getattr(sys, "frozen", False))
+PROJECT_ROOT = (
+    Path(getattr(sys, "_MEIPASS"))
+    if IS_FROZEN
+    else Path(__file__).resolve().parent.parent
+)
 PLUGINS_DIR = PROJECT_ROOT / "plugins"
 ICONS_DIR = PROJECT_ROOT / "icons"
-CONFIG_DIR = PROJECT_ROOT / "config"
+_LOCAL_APP_DATA = os.environ.get("LOCALAPPDATA") or str(
+    Path.home() / "AppData" / "Local"
+)
+APP_DATA_DIR = (
+    Path(_LOCAL_APP_DATA) / "KeyDeck"
+    if IS_FROZEN
+    else PROJECT_ROOT
+)
+CONFIG_DIR = APP_DATA_DIR / "config"
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
+PLUGIN_DATA_DIR = APP_DATA_DIR / "plugins"
 
 
 BUTTON_SIZE_MAP = {
@@ -21,6 +39,62 @@ BUTTON_SIZE_MAP = {
 
 
 @dataclass
+class DeckPage:
+    page_id: str = field(default_factory=lambda: uuid4().hex)
+    name: str = "Page 1"
+    rows: int = 2
+    columns: int = 4
+    slot_actions: list[str | None] = field(default_factory=list)
+    slot_settings: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], index: int) -> "DeckPage":
+        rows = _positive_int(data.get("rows", 2), 2)
+        columns = _positive_int(data.get("columns", 4), 4)
+        raw_actions = data.get("slot_actions", [])
+        actions = [
+            item.strip() if isinstance(item, str) and item.strip() else None
+            for item in raw_actions
+        ] if isinstance(raw_actions, list) else []
+        raw_settings = data.get("slot_settings", {})
+        slot_settings = (
+            {str(key): value for key, value in raw_settings.items() if isinstance(value, dict)}
+            if isinstance(raw_settings, dict)
+            else {}
+        )
+        page_id = data.get("page_id")
+        return cls(
+            page_id=page_id.strip() if isinstance(page_id, str) and page_id.strip() else uuid4().hex,
+            name=str(data.get("name", f"Page {index + 1}")).strip() or f"Page {index + 1}",
+            rows=rows,
+            columns=columns,
+            slot_actions=actions,
+            slot_settings=slot_settings,
+        ).clamp()
+
+    def clamp(self) -> "DeckPage":
+        self.rows = max(1, min(self.rows, 8))
+        self.columns = max(1, min(self.columns, 8))
+        total = self.rows * self.columns
+        self.slot_actions = list(self.slot_actions) + [None] * max(0, total - len(self.slot_actions))
+        self.slot_settings = {
+            str(key): value
+            for key, value in self.slot_settings.items()
+            if str(key).isdigit() and isinstance(value, dict)
+        }
+        return self
+
+
+def _positive_int(value: Any, fallback: int) -> int:
+    try:
+        if isinstance(value, float) and not value.is_integer():
+            raise ValueError
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return fallback
+
+
+@dataclass
 class AppSettings:
     rows: int = 2
     columns: int = 4
@@ -28,6 +102,10 @@ class AppSettings:
     slot_actions: list[str | None] = field(default_factory=list)
     slot_settings: dict[str, dict[str, Any]] = field(default_factory=dict)
     slot_hotkeys: dict[str, str] = field(default_factory=dict)
+    right_alt_toggle: bool = False
+    pages: list[DeckPage] = field(default_factory=list)
+    active_page: int = 0
+    infinite_scroll: bool = False
     auto_start: bool = True
     high_priority: bool = True
 
@@ -56,15 +134,6 @@ class AppSettings:
                 else:
                     slot_actions.append(None)
 
-        def _positive_int(value: Any, fallback: int) -> int:
-            try:
-                # Avoid accepting fractional values silently (e.g. 2.5 -> 2).
-                if isinstance(value, float) and not value.is_integer():
-                    raise ValueError
-                return int(value)
-            except (TypeError, ValueError, OverflowError):
-                return fallback
-
         slot_settings = data.get("slot_settings", {})
         if not isinstance(slot_settings, dict):
             slot_settings = {}
@@ -73,32 +142,79 @@ class AppSettings:
         if not isinstance(slot_hotkeys, dict):
             slot_hotkeys = {}
 
+        rows = _positive_int(data.get("rows", defaults.rows), defaults.rows)
+        columns = _positive_int(data.get("columns", defaults.columns), defaults.columns)
+        raw_pages = data.get("pages")
+        if isinstance(raw_pages, list) and raw_pages:
+            pages = [
+                DeckPage.from_dict(item, index)
+                for index, item in enumerate(raw_pages)
+                if isinstance(item, dict)
+            ]
+        else:
+            pages = [
+                DeckPage(
+                    page_id="page-1",
+                    name="Page 1",
+                    rows=rows,
+                    columns=columns,
+                    slot_actions=slot_actions,
+                    slot_settings=slot_settings,
+                ).clamp()
+            ]
+        if not pages:
+            pages = [
+                DeckPage(
+                    page_id="page-1",
+                    rows=rows,
+                    columns=columns,
+                    slot_actions=slot_actions,
+                    slot_settings=slot_settings,
+                ).clamp()
+            ]
+
         settings = cls(
-            rows=_positive_int(data.get("rows", defaults.rows), defaults.rows),
-            columns=_positive_int(data.get("columns", defaults.columns), defaults.columns),
+            rows=rows,
+            columns=columns,
             button_size=button_size,
             slot_actions=slot_actions,
             slot_settings=slot_settings,
             slot_hotkeys=slot_hotkeys,
+            right_alt_toggle=bool(data.get("right_alt_toggle", defaults.right_alt_toggle)),
+            pages=pages,
+            active_page=_positive_int(data.get("active_page", 0), 0),
+            infinite_scroll=bool(data.get("infinite_scroll", False)),
             auto_start=bool(data.get("auto_start", defaults.auto_start)),
             high_priority=bool(data.get("high_priority", defaults.high_priority)),
         )
         return settings.clamp()
 
     def clamp(self) -> "AppSettings":
-        self.rows = max(1, min(self.rows, 8))
-        self.columns = max(1, min(self.columns, 8))
         if self.button_size not in BUTTON_SIZE_MAP:
             self.button_size = "medium"
-        self._normalize_slots()
+        if not self.pages:
+            self.pages = [
+                DeckPage(
+                    page_id="page-1",
+                    rows=self.rows,
+                    columns=self.columns,
+                    slot_actions=list(self.slot_actions),
+                    slot_settings=dict(self.slot_settings),
+                )
+            ]
+        self.pages = [page.clamp() for page in self.pages]
+        page_ids: set[str] = set()
+        for page in self.pages:
+            if page.page_id in page_ids:
+                page.page_id = uuid4().hex
+            page_ids.add(page.page_id)
+        self.active_page = max(0, min(self.active_page, len(self.pages) - 1))
+        first_page = self.pages[0]
+        self.rows = first_page.rows
+        self.columns = first_page.columns
+        self.slot_actions = list(first_page.slot_actions)
+        self.slot_settings = dict(first_page.slot_settings)
         return self
-
-    def _normalize_slots(self) -> None:
-        total = self.rows * self.columns
-        current = list(self.slot_actions)
-        if len(current) < total:
-            current.extend([None] * (total - len(current)))
-        self.slot_actions = current[:total]
 
     def button_pixels(self) -> int:
         return BUTTON_SIZE_MAP[self.button_size]
@@ -110,27 +226,39 @@ class AppSettings:
     ) -> bool:
         alias_map = aliases or {}
         changed = False
-        normalized: list[str | None] = []
-
-        for action_id in self.slot_actions:
-            if not action_id:
-                normalized.append(None)
-                continue
-            if action_id in valid_action_ids:
-                normalized.append(action_id)
-                continue
-
-            alias_target = alias_map.get(action_id)
-            if alias_target and alias_target in valid_action_ids:
-                normalized.append(alias_target)
-            else:
-                normalized.append(None)
-            changed = True
-
-        if changed:
-            self.slot_actions = normalized
-            self._normalize_slots()
+        for page in self.pages:
+            normalized: list[str | None] = []
+            for action_id in page.slot_actions:
+                if not action_id or action_id in valid_action_ids:
+                    normalized.append(action_id)
+                    continue
+                normalized.append(alias_map.get(action_id))
+                changed = True
+            if normalized != page.slot_actions:
+                page.slot_actions = normalized
+        self.clamp()
         return changed
+
+    def resolve_hotkey_key(self, key: str) -> tuple[int, int] | None:
+        if ":" not in key:
+            try:
+                slot = int(key)
+            except ValueError:
+                return None
+            return (
+                (0, slot)
+                if self.pages and 0 <= slot < self.pages[0].rows * self.pages[0].columns
+                else None
+            )
+        page_id, slot_text = key.rsplit(":", 1)
+        try:
+            slot = int(slot_text)
+        except ValueError:
+            return None
+        for page_index, page in enumerate(self.pages):
+            if page.page_id == page_id and 0 <= slot < page.rows * page.columns:
+                return page_index, slot
+        return None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -139,8 +267,18 @@ class AppSettings:
 def load_settings() -> AppSettings:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if not SETTINGS_FILE.exists():
+        if IS_FROZEN:
+            legacy_file = Path(sys.executable).resolve().parent / "config" / "settings.json"
+            if legacy_file.is_file():
+                shutil.copy2(legacy_file, SETTINGS_FILE)
+        if SETTINGS_FILE.exists():
+            return _read_settings()
         return AppSettings()
 
+    return _read_settings()
+
+
+def _read_settings() -> AppSettings:
     try:
         raw = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
         if isinstance(raw, dict):

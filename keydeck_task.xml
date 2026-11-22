@@ -36,9 +36,8 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\надо\python\KeyDeck\.venv\Scripts\pythonw.exe</Command>
-      <Arguments>-m keydeck</Arguments>
-      <WorkingDirectory>C:\надо\python\KeyDeck</WorkingDirectory>
+      <Command>%LOCALAPPDATA%\Programs\KeyDeck\KeyDeck.exe</Command>
+      <WorkingDirectory>%LOCALAPPDATA%\Programs\KeyDeck</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>

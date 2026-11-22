@@ -34,6 +34,15 @@ class PluginContext:
     entry_file: Path
     settings_file: Path
     manifest: dict
+    data_dir: Path | None = None
+
+    def __post_init__(self) -> None:
+        if self.data_dir is None:
+            self.data_dir = self.plugin_dir
+
+    @property
+    def writable_dir(self) -> Path:
+        return self.data_dir or self.plugin_dir
 
     def load_settings(self, default: dict | None = None) -> dict:
         if not self.settings_file.exists():
@@ -79,4 +88,3 @@ class PluginBase:
         if self.context is None:
             return
         os.startfile(str(self.context.settings_file))
-

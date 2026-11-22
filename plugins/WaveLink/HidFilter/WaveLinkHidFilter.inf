@@ -1,0 +1,52 @@
+; Wave Link calibrated HID Consumer Control upper filter.
+[Version]
+Signature="$WINDOWS NT$"
+Class=HIDClass
+ClassGuid={745A17A0-74D3-11D0-B6FE-00A0C90F57DA}
+Provider=%Provider%
+DriverVer=11/06/2026,1.0.0.0
+CatalogFile=WaveLinkHidFilter.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTamd64.10.0
+
+[Models.NTamd64.10.0]
+%DeviceDesc%=Install, HID_DEVICE_SYSTEM_CONSUMER
+
+[Install.NT]
+CopyFiles=DriverCopy
+
+[Install.NT.Services]
+AddService=WaveLinkHidFilter,0x00000002,ServiceInstall
+
+[Install.NT.Filters]
+AddFilter=WaveLinkHidFilter,,UpperFilter
+
+[UpperFilter]
+FilterPosition=Upper
+
+[ServiceInstall]
+DisplayName=%ServiceDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\WaveLinkHidFilter.sys
+
+[DestinationDirs]
+DriverCopy=12
+
+[DriverCopy]
+WaveLinkHidFilter.sys
+
+[SourceDisksNames]
+1=%DiskDesc%,,,
+
+[SourceDisksFiles]
+WaveLinkHidFilter.sys=1
+
+[Strings]
+Provider="KeyDeck"
+DeviceDesc="KeyDeck Wave Link HID volume filter"
+ServiceDesc="KeyDeck Wave Link HID volume filter"
+DiskDesc="KeyDeck Wave Link HID filter installation media"

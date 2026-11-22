@@ -388,7 +388,13 @@ class SettingsDialogTests(unittest.TestCase):
         try:
             self.assertEqual(dialog.plugin_list.count(), 1)
             self.assertEqual(dialog.plugin_status_label.text(), "Disabled")
-            self.assertIn("[Disabled]", dialog.plugin_list.item(0).text())
+            item = dialog.plugin_list.item(0)
+            self.assertEqual(item.text(), "Sample plugin")
+            self.assertEqual(item.data(Qt.UserRole + 1), "Disabled")
+            self.assertEqual(
+                item.icon().pixmap(12, 12).toImage().pixelColor(6, 6).name(),
+                "#737373",
+            )
             self.assertFalse(dialog.plugin_enabled_toggle.isChecked())
             self.assertEqual(dialog.plugin_enabled_toggle._position, 0.0)
 
@@ -426,9 +432,46 @@ class SettingsDialogTests(unittest.TestCase):
             self.assertTrue(dialog.plugin_enabled_toggle.isChecked())
             self.assertEqual(dialog.plugin_enabled_toggle._position, 1.0)
             self.assertEqual(dialog.plugin_list.item(2).data(Qt.UserRole), "zeta")
-            self.assertIn("[Enabled]", dialog.plugin_list.item(1).text())
-            self.assertIn("[Disabled]", dialog.plugin_list.item(2).text())
+            self.assertEqual(dialog.plugin_list.item(1).data(Qt.UserRole + 1), "Enabled")
+            self.assertEqual(dialog.plugin_list.item(2).data(Qt.UserRole + 1), "Disabled")
+            self.assertEqual(
+                dialog.plugin_list.item(1).icon().pixmap(12, 12).toImage().pixelColor(6, 6).name(),
+                "#42c783",
+            )
             self.assertEqual(dialog.to_settings().disabled_plugins, ["zeta"])
+        finally:
+            dialog.close()
+
+    def test_plugin_settings_button_edits_multitool_assigned_sequence(self) -> None:
+        action = Action(
+            action_id="MultiTool.run",
+            title="MultiTool",
+            callback=lambda: None,
+            plugin_id="MultiTool",
+            plugin_settings_enabled=False,
+            action_settings_callback=lambda _slot, _settings: {
+                "steps": [{"type": "url", "value": "https://example.com"}]
+            },
+        )
+        settings = AppSettings(
+            pages=[DeckPage(slot_actions=["MultiTool.run"], slot_settings={"0": {}})]
+        )
+        dialog = SettingsDialog(
+            settings,
+            [action],
+            available_plugins=[PluginInfo("MultiTool", "MultiTool")],
+        )
+        try:
+            self.assertEqual(
+                dialog.configure_plugin_btn.text(),
+                "Configure assigned button",
+            )
+            dialog.configure_plugin_btn.click()
+
+            self.assertEqual(
+                dialog.to_settings().pages[0].slot_settings["0"]["steps"],
+                [{"type": "url", "value": "https://example.com"}],
+            )
         finally:
             dialog.close()
 

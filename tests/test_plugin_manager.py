@@ -12,6 +12,38 @@ from keydeck.plugin_manager import PluginInfo, PluginManager
 
 
 class PluginManagerTests(unittest.TestCase):
+    def test_action_can_disable_generic_json_settings_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            plugin_dir = Path(temp_dir) / "plugins" / "button_only"
+            plugin_dir.mkdir(parents=True)
+            (plugin_dir / "manifest.json").write_text(
+                json.dumps({"id": "button_only", "name": "Button only"}),
+                encoding="utf-8",
+            )
+            (plugin_dir / "plugin.py").write_text(
+                """
+from keydeck.plugin_api import Action, PluginBase
+
+class Plugin(PluginBase):
+    def actions(self):
+        return [Action(
+            action_id="button_only.run",
+            title="Run",
+            callback=lambda: None,
+            plugin_id="button_only",
+            plugin_settings_enabled=False,
+        )]
+""",
+                encoding="utf-8",
+            )
+            manager = PluginManager(plugin_dir.parent, data_dir=Path(temp_dir) / "data")
+            manager.load_plugins()
+
+            action = manager.all_actions()[0]
+
+            self.assertIsNone(action.settings_callback)
+            manager.unload_plugins()
+
     def test_disabled_plugin_is_not_imported_and_releases_loaded_module(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

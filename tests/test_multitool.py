@@ -9,10 +9,10 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 
 from keydeck.plugin_api import PluginContext
-from plugins.MultiTool.plugin import Plugin, SequenceEditorDialog
+from plugins.MultiTool.plugin import Plugin, SequenceEditorDialog, SequenceStepCard
 
 
 class MultiToolTests(unittest.TestCase):
@@ -102,8 +102,34 @@ class MultiToolTests(unittest.TestCase):
             self.assertFalse(steps[0]["enabled"])
             self.assertEqual(steps[1]["value"], "https://one.example")
             self.assertEqual(dialog.step_list.item(0).checkState(), Qt.CheckState.Unchecked)
+            card = dialog.step_list.itemWidget(dialog.step_list.item(0))
+            self.assertIsInstance(card, SequenceStepCard)
+            self.assertEqual(
+                card.findChild(QLabel, "SequenceStepNumber").text(),
+                "01",
+            )
         finally:
             dialog.close()
+
+    def test_step_card_toggle_controls_whether_action_runs(self) -> None:
+        dialog = SequenceEditorDialog(
+            [{"type": "url", "value": "https://example.com"}],
+            [],
+        )
+        try:
+            card = dialog.step_list.itemWidget(dialog.step_list.item(0))
+
+            card.enabled_toggle.click()
+
+            self.assertFalse(dialog.result_steps()[0]["enabled"])
+        finally:
+            dialog.close()
+
+    def test_multitool_action_does_not_offer_json_plugin_settings(self) -> None:
+        action = self._plugin().actions()[0]
+
+        self.assertFalse(action.plugin_settings_enabled)
+        self.assertIsNone(action.settings_callback)
 
 
 if __name__ == "__main__":

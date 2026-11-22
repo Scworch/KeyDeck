@@ -121,6 +121,32 @@ QListWidget#Sidebar::item:selected {
     border-left: 3px solid @ACCENT@;
     padding-left: 9px;
 }
+QFrame#SequenceStepCard {
+    background-color: #292929;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+}
+QFrame#SequenceStepCard[selected="true"] {
+    background-color: #303030;
+    border: 1px solid @ACCENT@;
+}
+QLabel#SequenceStepNumber {
+    background-color: #3a3a3a;
+    color: #d7d7d7;
+    border-radius: 17px;
+    font-weight: 600;
+}
+QFrame#SequenceStepCard[selected="true"] QLabel#SequenceStepNumber {
+    background-color: @ACCENT@;
+    color: #ffffff;
+}
+QLabel#SequenceStepType {
+    color: #f3f3f3;
+    font-weight: 600;
+}
+QLabel#SequenceStepDetail {
+    color: #aaaaaa;
+}
 QListWidget#ErrorList {
     background-color: #2b2424;
     border: 1px solid #473131;

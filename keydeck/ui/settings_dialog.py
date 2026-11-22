@@ -1079,6 +1079,7 @@ class SettingsDialog(QDialog):
         list_layout.addWidget(list_heading)
         self.plugin_list = QListWidget(list_card)
         self.plugin_list.setObjectName("PluginList")
+        self.plugin_list.setIconSize(QSize(12, 12))
         self.plugin_list.currentRowChanged.connect(self._show_plugin_details)
         list_layout.addWidget(self.plugin_list, 1)
         content.addWidget(list_card, 1)
@@ -1194,10 +1195,11 @@ class SettingsDialog(QDialog):
         for index, plugin_info in enumerate(ordered_plugins):
             disabled = plugin_info.plugin_id in self._disabled_plugins
             status = "Disabled" if disabled else "Enabled"
-            item = QListWidgetItem(f"{plugin_info.plugin_name}  [{status}]")
+            item = QListWidgetItem(plugin_info.plugin_name)
+            item.setIcon(self._plugin_status_icon(not disabled))
             item.setData(Qt.UserRole, plugin_info.plugin_id)
             item.setData(Qt.UserRole + 1, status)
-            item.setToolTip(plugin_info.plugin_id)
+            item.setToolTip(f"{status} · {plugin_info.plugin_id}")
             self.plugin_list.addItem(item)
             if plugin_info.plugin_id == selected_plugin_id:
                 selected_row = index
@@ -1224,6 +1226,18 @@ class SettingsDialog(QDialog):
         else:
             self._show_plugin_details(-1)
 
+    @staticmethod
+    def _plugin_status_icon(enabled: bool) -> QIcon:
+        pixmap = QPixmap(12, 12)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#42c783" if enabled else "#737373"))
+        painter.drawEllipse(1, 1, 10, 10)
+        painter.end()
+        return QIcon(pixmap)
+
     def _show_plugin_details(self, row: int) -> None:
         if not 0 <= row < len(self.available_plugins):
             self.plugin_name_label.setText("No plugin selected")
@@ -1243,10 +1257,30 @@ class SettingsDialog(QDialog):
         action_count = sum(action.plugin_id == plugin_id for action in self.actions)
         disabled = plugin_id in self._disabled_plugins
         plugin = self._plugins_by_id.get(plugin_id)
-        has_settings = plugin is not None or any(
-            action.plugin_id == plugin_id and action.settings_callback is not None
+        plugin_settings = any(
+            action.plugin_id == plugin_id
+            and action.plugin_settings_enabled
+            and action.settings_callback is not None
             for action in self.actions
         )
+        custom_plugin_settings = (
+            plugin is not None
+            and type(plugin).open_settings is not PluginBase.open_settings
+        )
+        assigned_action_settings = any(
+            assigned_action_id == action.action_id
+            and action.plugin_id == plugin_id
+            and action.action_settings_callback is not None
+            for page in self._pages
+            for assigned_action_id in page.slot_actions
+            for action in self.actions
+        )
+        has_button_settings = any(
+            action.plugin_id == plugin_id
+            and action.action_settings_callback is not None
+            for action in self.actions
+        )
+        has_settings = plugin_settings or custom_plugin_settings or assigned_action_settings
         self.plugin_name_label.setText(plugin_name)
         self.plugin_id_label.setText(plugin_id)
         self.plugin_status_label.setText(
@@ -1259,6 +1293,15 @@ class SettingsDialog(QDialog):
             )
         elif plugin is None and not action_count:
             summary = "This plugin is enabled but was not loaded. Check plugin load issues below."
+        elif assigned_action_settings and not (plugin_settings or custom_plugin_settings):
+            summary = (
+                "Each assigned button can have its own visual sequence. Choose a button "
+                "to edit its ordered actions."
+            )
+        elif has_button_settings and not (plugin_settings or custom_plugin_settings):
+            summary = (
+                "Assign this plugin to a button to configure its launch target or action."
+            )
         else:
             summary = (
                 "Configure this plugin's shared settings. Button-specific options remain "
@@ -1268,6 +1311,10 @@ class SettingsDialog(QDialog):
         self.plugin_actions_label.setText(
             f"{action_count} active {'action' if action_count == 1 else 'actions'}"
         )
+        if has_button_settings and not (plugin_settings or custom_plugin_settings):
+            self.configure_plugin_btn.setText("Configure assigned button")
+        else:
+            self.configure_plugin_btn.setText("Open plugin settings")
         self.plugin_enabled_toggle.blockSignals(True)
         self.plugin_enabled_toggle.setChecked(not disabled)
         self.plugin_enabled_toggle.blockSignals(False)
@@ -1282,20 +1329,77 @@ class SettingsDialog(QDialog):
         if plugin_id in self._disabled_plugins:
             return
         plugin = self._plugins_by_id.get(plugin_id)
-        if plugin is not None:
-            plugin.open_settings()
-        else:
-            callback = next(
-                (
+        plugin_settings = any(
+            action.plugin_id == plugin_id
+            and action.plugin_settings_enabled
+            and action.settings_callback is not None
+            for action in self.actions
+        )
+        custom_plugin_settings = (
+            plugin is not None
+            and type(plugin).open_settings is not PluginBase.open_settings
+        )
+        if plugin_settings or custom_plugin_settings:
+            if plugin is not None:
+                plugin.open_settings()
+            else:
+                callback = next(
                     action.settings_callback
                     for action in self.actions
-                    if action.plugin_id == plugin_id and action.settings_callback is not None
-                ),
-                None,
-            )
-            if callback is not None:
+                    if action.plugin_id == plugin_id
+                    and action.plugin_settings_enabled
+                    and action.settings_callback is not None
+                )
                 callback()
+        else:
+            self._configure_assigned_action(plugin_id)
         self._refresh_plugin_actions()
+
+    def _configure_assigned_action(self, plugin_id: str) -> None:
+        configured: list[tuple[DeckPage, int, Action]] = []
+        for page in self._pages:
+            for slot, action_id in enumerate(page.slot_actions):
+                action = self._action_by_id.get(action_id) if action_id else None
+                if (
+                    action is not None
+                    and action.plugin_id == plugin_id
+                    and action.action_settings_callback is not None
+                ):
+                    configured.append((page, slot, action))
+        if not configured:
+            QMessageBox.information(
+                self,
+                "Plugin settings",
+                "Assign this plugin to a button first, then configure its button sequence.",
+            )
+            return
+        if len(configured) == 1:
+            page, slot, action = configured[0]
+        else:
+            labels = [
+                f"{page.name} · Button {slot + 1} · {action.title}"
+                for page, slot, action in configured
+            ]
+            selected, accepted = QInputDialog.getItem(
+                self,
+                "Choose a button",
+                "Choose which assigned button to configure:",
+                labels,
+                0,
+                False,
+            )
+            if not accepted:
+                return
+            page, slot, action = configured[labels.index(selected)]
+        slot_key = str(slot)
+        current_settings = page.slot_settings.get(slot_key, {})
+        new_settings = action.action_settings_callback(slot, current_settings)
+        if new_settings is None:
+            return
+        page.slot_settings[slot_key] = new_settings
+        if page is self._current_page:
+            self._refresh_slot(slot)
+            self._schedule_preview_rebuild()
 
     def _set_selected_plugin_enabled(self, enabled: bool) -> None:
         item = self.plugin_list.currentItem()

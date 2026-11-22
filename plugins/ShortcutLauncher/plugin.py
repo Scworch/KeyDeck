@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QComboBox,
     QHBoxLayout,
     QLineEdit,
     QMessageBox,
@@ -30,6 +32,10 @@ POWERSHELL_SCRIPT = (
     "$link = $shell.CreateShortcut($env:KEYDECK_SHORTCUT_PATH); "
     "[pscustomobject]@{ target=$link.TargetPath; arguments=$link.Arguments; "
     "working_directory=$link.WorkingDirectory } | ConvertTo-Json -Compress"
+)
+RUN_COMMAND_SCRIPT = (
+    "$shell = New-Object -ComObject WScript.Shell; "
+    "$shell.Run($env:KEYDECK_RUN_COMMAND, 1, $false)"
 )
 
 
@@ -95,28 +101,36 @@ def resolve_shortcut(shortcut_path: Path) -> ShortcutTarget:
 
 
 class TargetPickerDialog(QDialog):
-    def __init__(self, path: str = "", parent=None) -> None:
+    def __init__(self, path: str = "", mode: str = "file", parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Choose application")
         self.setModal(True)
-        size_dialog(self, 700, 250, 560, 220)
+        size_dialog(self, 700, 300, 560, 260)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(14)
         add_dialog_header(
             layout,
             "Choose an application",
-            "Select an .exe or a Windows shortcut. Shortcut targets are copied into KeyDeck's data folder.",
+            "Choose an .exe, a Windows shortcut, or a Windows Run command such as a deep link.",
             self,
         )
+        self.mode_combo = QComboBox(self)
+        self.mode_combo.addItem("Program or shortcut", "file")
+        self.mode_combo.addItem("Command or deep link", "command")
+        self.mode_combo.setCurrentIndex(
+            max(0, self.mode_combo.findData(mode))
+        )
+        self.mode_combo.currentIndexChanged.connect(self._update_mode)
+        layout.addWidget(self.mode_combo)
         row = QHBoxLayout()
         self.path_edit = QLineEdit(path, self)
         self.path_edit.setPlaceholderText("Path to .exe or .lnk")
         row.addWidget(self.path_edit, 1)
-        browse_button = QPushButton("Browse…", self)
-        browse_button.setObjectName("QuietButton")
-        browse_button.clicked.connect(self._browse)
-        row.addWidget(browse_button)
+        self.browse_button = QPushButton("Browse…", self)
+        self.browse_button.setObjectName("QuietButton")
+        self.browse_button.clicked.connect(self._browse)
+        row.addWidget(self.browse_button)
         layout.addLayout(row)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
@@ -127,6 +141,16 @@ class TargetPickerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+        self._update_mode()
+
+    def _update_mode(self) -> None:
+        command_mode = self.mode_combo.currentData() == "command"
+        self.path_edit.setPlaceholderText(
+            "Command or deep link, e.g. steam://run/123"
+            if command_mode
+            else "Path to .exe or .lnk"
+        )
+        self.browse_button.setVisible(not command_mode)
 
     def _browse(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -152,12 +176,15 @@ class Plugin(PluginBase):
                 callback=self._launch,
                 plugin_id=self.plugin_id,
                 icon_path=str(icon_path),
+                plugin_settings_enabled=False,
                 action_settings_callback=self._edit_action_settings,
                 action_icon_callback=self._get_icon,
             )
         ]
 
     def _get_icon(self, _slot: int, settings: dict) -> str | None:
+        if settings.get("launch_mode") == "command":
+            return str(Path(__file__).with_name("shortcut.svg"))
         path = settings.get("target_path")
         if isinstance(path, str) and Path(path).is_file():
             return path
@@ -165,9 +192,21 @@ class Plugin(PluginBase):
 
     def _edit_action_settings(self, _slot: int, settings: dict) -> dict | None:
         parent = QApplication.activeModalWidget() or QApplication.activeWindow()
-        dialog = TargetPickerDialog(str(settings.get("source_path", "")), parent)
+        mode = str(settings.get("launch_mode", "file"))
+        current_value = (
+            settings.get("command", "")
+            if mode == "command"
+            else settings.get("source_path", "")
+        )
+        dialog = TargetPickerDialog(str(current_value), mode, parent)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return None
+        if dialog.mode_combo.currentData() == "command":
+            command = dialog.path_edit.text().strip()
+            if not command:
+                QMessageBox.warning(dialog, "Shortcut Launcher", "Enter a command or deep link.")
+                return None
+            return {"launch_mode": "command", "command": command}
         selected_path = Path(dialog.path_edit.text().strip()).expanduser()
         if not selected_path.is_file():
             QMessageBox.warning(dialog, "Shortcut Launcher", "Select an existing .exe or .lnk file.")
@@ -216,6 +255,15 @@ class Plugin(PluginBase):
 
     def _launch(self, settings: dict | None = None) -> None:
         settings = settings or {}
+        launch_mode = settings.get("launch_mode", "file")
+        if launch_mode == "command":
+            command = str(settings.get("command", "")).strip()
+            if not command:
+                raise ValueError("Configure this button with a command or deep link.")
+            self._run_windows_command(command)
+            return
+        if launch_mode != "file":
+            raise ValueError(f"Unknown launch mode: {launch_mode}")
         target_path = Path(str(settings.get("target_path", ""))).expanduser()
         if target_path.suffix.casefold() != ".exe" or not target_path.is_file():
             raise FileNotFoundError("Configure this button with an existing .exe or Windows shortcut.")
@@ -231,5 +279,24 @@ class Plugin(PluginBase):
         subprocess.Popen(
             [str(target_path), *arguments],
             cwd=str(working_directory),
+            creationflags=creation_flags,
+        )
+
+    def _run_windows_command(self, command: str) -> None:
+        environment = os.environ.copy()
+        environment["KEYDECK_RUN_COMMAND"] = command
+        encoded = base64.b64encode(RUN_COMMAND_SCRIPT.encode("utf-16le")).decode("ascii")
+        creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        subprocess.Popen(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-WindowStyle",
+                "Hidden",
+                "-EncodedCommand",
+                encoded,
+            ],
+            env=environment,
             creationflags=creation_flags,
         )

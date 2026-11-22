@@ -7,15 +7,17 @@ import webbrowser
 from pathlib import Path
 from urllib.parse import urlparse
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QInputDialog,
+    QLabel,
     QListWidget,
     QListWidgetItem,
     QMenu,
@@ -25,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
-from keydeck.ui.controls import add_dialog_header, style_dialog_buttons
+from keydeck.ui.controls import ToggleSwitch, add_dialog_header, style_dialog_buttons
 from keydeck.ui.theme import size_dialog
 
 RUN_COMMAND_SCRIPT = (
@@ -38,6 +40,75 @@ STEP_TYPES = {
     "command": "Run a Win+R command",
     "plugin": "Press another plugin button",
 }
+
+
+class SequenceStepCard(QFrame):
+    selected = Signal()
+
+    def __init__(
+        self,
+        number: int,
+        step: dict,
+        item: QListWidgetItem,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("SequenceStepCard")
+        self.setProperty("selected", False)
+        self.setMinimumHeight(72)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(12)
+
+        number_label = QLabel(f"{number:02}", self)
+        number_label.setObjectName("SequenceStepNumber")
+        number_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        number_label.setFixedSize(34, 34)
+        number_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        layout.addWidget(number_label)
+
+        text_layout = QVBoxLayout()
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(3)
+        type_label = QLabel(STEP_TYPES.get(step.get("type"), "Unknown step"), self)
+        type_label.setObjectName("SequenceStepType")
+        type_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        detail = (
+            step.get("label", "Plugin button")
+            if step.get("type") == "plugin"
+            else step.get("value", "")
+        )
+        detail_label = QLabel(str(detail), self)
+        detail_label.setObjectName("SequenceStepDetail")
+        detail_label.setWordWrap(True)
+        detail_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        detail_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        text_layout.addWidget(type_label)
+        text_layout.addWidget(detail_label)
+        layout.addLayout(text_layout, 1)
+
+        self.enabled_toggle = ToggleSwitch("Enabled", self)
+        self.enabled_toggle.setFixedWidth(104)
+        self.enabled_toggle.setChecked(item.checkState() != Qt.CheckState.Unchecked)
+        self.enabled_toggle.toggled.connect(
+            lambda checked: item.setCheckState(
+                Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+            )
+        )
+        layout.addWidget(self.enabled_toggle)
+
+    def set_selected(self, selected: bool) -> None:
+        self.setProperty("selected", selected)
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.selected.emit()
+        super().mousePressEvent(event)
 
 
 class SequenceEditorDialog(QDialog):
@@ -65,7 +136,7 @@ class SequenceEditorDialog(QDialog):
         )
         self.step_list = QListWidget(self)
         self.step_list.setObjectName("PluginList")
-        self.step_list.setSpacing(4)
+        self.step_list.setSpacing(6)
         layout.addWidget(self.step_list, 1)
 
         controls = QHBoxLayout()
@@ -104,7 +175,9 @@ class SequenceEditorDialog(QDialog):
         for step in steps:
             self._append_step(step)
         self.step_list.currentRowChanged.connect(self._update_control_state)
+        self.step_list.currentItemChanged.connect(self._update_card_selection)
         self._update_control_state(self.step_list.currentRow())
+        self._update_card_selection(self.step_list.currentItem(), None)
 
     def result_steps(self) -> list[dict]:
         steps: list[dict] = []
@@ -125,6 +198,29 @@ class SequenceEditorDialog(QDialog):
             else Qt.CheckState.Checked
         )
         self.step_list.addItem(item)
+        item.setSizeHint(QSize(0, 88))
+        card = SequenceStepCard(self.step_list.count(), step, item, self.step_list)
+        card.selected.connect(lambda item=item: self.step_list.setCurrentItem(item))
+        self.step_list.setItemWidget(item, card)
+        self._renumber_cards()
+
+    def _renumber_cards(self) -> None:
+        for index in range(self.step_list.count()):
+            item = self.step_list.item(index)
+            card = self.step_list.itemWidget(item)
+            if card is None:
+                continue
+            number_label = card.findChild(QLabel, "SequenceStepNumber")
+            if number_label is not None:
+                number_label.setText(f"{index + 1:02}")
+
+    def _update_card_selection(self, current, previous) -> None:
+        _ = previous
+        for index in range(self.step_list.count()):
+            item = self.step_list.item(index)
+            card = self.step_list.itemWidget(item)
+            if isinstance(card, SequenceStepCard):
+                card.set_selected(item is current)
 
     def _step_label(self, step: dict) -> str:
         label = STEP_TYPES.get(step.get("type"), "Unknown step")
@@ -249,25 +345,33 @@ class SequenceEditorDialog(QDialog):
         original_count = self.step_list.count()
         self._add_step(step.get("type", ""), step)
         if self.step_list.count() > original_count:
-            replacement = self.step_list.takeItem(self.step_list.count() - 1)
-            self.step_list.takeItem(row)
-            self.step_list.insertItem(row, replacement)
-            self.step_list.setCurrentRow(row)
+            steps = self.result_steps()
+            steps.insert(row, steps.pop())
+            self._replace_steps(steps, row)
 
     def _remove_selected(self) -> None:
         row = self.step_list.currentRow()
-        if row >= 0:
-            self.step_list.takeItem(row)
-            self._update_control_state(self.step_list.currentRow())
+        if row < 0:
+            return
+        steps = self.result_steps()
+        steps.pop(row)
+        self._replace_steps(steps, min(row, len(steps) - 1))
 
     def _move_selected(self, direction: int) -> None:
         row = self.step_list.currentRow()
         target = row + direction
         if not 0 <= row < self.step_list.count() or not 0 <= target < self.step_list.count():
             return
-        item = self.step_list.takeItem(row)
-        self.step_list.insertItem(target, item)
-        self.step_list.setCurrentRow(target)
+        steps = self.result_steps()
+        steps.insert(target, steps.pop(row))
+        self._replace_steps(steps, target)
+
+    def _replace_steps(self, steps: list[dict], selected_row: int) -> None:
+        self.step_list.clear()
+        for step in steps:
+            self._append_step(step)
+        self.step_list.setCurrentRow(selected_row)
+        self._update_control_state(selected_row)
 
     def _update_control_state(self, row: int) -> None:
         valid = 0 <= row < self.step_list.count()
@@ -289,6 +393,7 @@ class Plugin(PluginBase):
                 callback=self._run_sequence,
                 plugin_id=self.plugin_id,
                 icon_path=str(Path(__file__).with_name("multitool.svg")),
+                plugin_settings_enabled=False,
                 action_settings_callback=self._edit_sequence,
             )
         ]

@@ -174,7 +174,7 @@ class PluginManager:
                         action.plugin_id = (
                             plugin.context.plugin_id if plugin.context else plugin.__class__.__name__
                         )
-                    if action.settings_callback is None:
+                    if action.settings_callback is None and action.plugin_settings_enabled:
                         action.settings_callback = plugin.open_settings
                 actions.extend(plugin_actions)
             except Exception as exc:  # noqa: BLE001

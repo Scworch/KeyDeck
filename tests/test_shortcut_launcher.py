@@ -8,11 +8,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from PySide6.QtWidgets import QApplication
+
 from keydeck.plugin_api import PluginContext
-from plugins.ShortcutLauncher.plugin import Plugin, resolve_shortcut
+from plugins.ShortcutLauncher.plugin import Plugin, TargetPickerDialog, resolve_shortcut
 
 
 class ShortcutLauncherTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.app = QApplication.instance() or QApplication([])
+
     def test_shortcut_target_is_copied_to_plugin_data_storage(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -78,6 +84,35 @@ class ShortcutLauncherTests(unittest.TestCase):
             with patch("plugins.ShortcutLauncher.plugin.subprocess.run", return_value=completed):
                 with self.assertRaisesRegex(ValueError, "existing .exe"):
                     resolve_shortcut(shortcut)
+
+    def test_launch_action_runs_configured_command_or_deep_link(self) -> None:
+        plugin = Plugin()
+        command = 'steam://run/123 "--option"'
+        with patch.object(plugin, "_run_windows_command") as run_command:
+            plugin._launch({"launch_mode": "command", "command": command})
+
+        run_command.assert_called_once_with(command)
+
+    def test_command_is_passed_as_data_to_hidden_windows_run(self) -> None:
+        plugin = Plugin()
+        command = 'steam://run/123 "--option"'
+        with patch("plugins.ShortcutLauncher.plugin.subprocess.Popen") as popen:
+            plugin._run_windows_command(command)
+
+        self.assertEqual(
+            popen.call_args.kwargs["env"]["KEYDECK_RUN_COMMAND"],
+            command,
+        )
+        self.assertIn("-EncodedCommand", popen.call_args.args[0])
+
+    def test_target_picker_exposes_command_and_deep_link_mode(self) -> None:
+        dialog = TargetPickerDialog("steam://run/123", "command")
+        try:
+            self.assertEqual(dialog.mode_combo.currentData(), "command")
+            self.assertEqual(dialog.path_edit.text(), "steam://run/123")
+            self.assertTrue(dialog.browse_button.isHidden())
+        finally:
+            dialog.close()
 
 
 if __name__ == "__main__":

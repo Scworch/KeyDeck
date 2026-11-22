@@ -24,6 +24,7 @@ class Action:
     icon_offset_x: int = 0
     icon_offset_y: int = 0
     aliases: list[str] = field(default_factory=list)
+    plugin_settings_enabled: bool = True
 
 
 @dataclass

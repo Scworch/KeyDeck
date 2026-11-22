@@ -6,7 +6,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 
 @dataclass
@@ -35,6 +35,8 @@ class PluginContext:
     settings_file: Path
     manifest: dict
     data_dir: Path | None = None
+    get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None
+    invoke_assigned_slot: Callable[[str, int], None] | None = None
 
     def __post_init__(self) -> None:
         if self.data_dir is None:
@@ -63,6 +65,16 @@ class PluginContext:
             json.dumps(data, ensure_ascii=True, indent=2) + "\n",
             encoding="utf-8",
         )
+
+    def assigned_plugin_slots(self) -> list[dict[str, Any]]:
+        if self.get_assigned_slots is None:
+            return []
+        return self.get_assigned_slots()
+
+    def invoke_plugin_slot(self, page_id: str, slot: int) -> None:
+        if self.invoke_assigned_slot is None:
+            raise RuntimeError("Plugin slot invocation is not available")
+        self.invoke_assigned_slot(page_id, slot)
 
 
 class PluginBase:

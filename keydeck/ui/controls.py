@@ -84,6 +84,13 @@ class ToggleSwitch(QCheckBox):
         policy.setHeightForWidth(True)
         self.setSizePolicy(policy)
 
+    def setChecked(self, checked: bool) -> None:  # noqa: N802
+        super().setChecked(checked)
+        if self.signalsBlocked():
+            self._animation.stop()
+            self._position = 1.0 if checked else 0.0
+            self.update()
+
     def hitButton(self, position: QPoint) -> bool:  # noqa: N802
         return self.rect().contains(position)
 

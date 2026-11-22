@@ -330,6 +330,9 @@ def size_dialog(
     minimum_width: int,
     minimum_height: int,
 ) -> None:
+    application = QApplication.instance()
+    if application is not None and not application.windowIcon().isNull():
+        dialog.setWindowIcon(application.windowIcon())
     screen = dialog.screen() or QApplication.primaryScreen()
     if screen is None:
         dialog.setMinimumSize(minimum_width, minimum_height)

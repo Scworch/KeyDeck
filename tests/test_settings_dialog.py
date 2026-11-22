@@ -8,7 +8,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, QTimer, Qt
-from PySide6.QtGui import QColor, QContextMenuEvent, QPixmap
+from PySide6.QtGui import QColor, QContextMenuEvent, QIcon, QPixmap
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMenu
 
@@ -62,6 +62,21 @@ class SettingsDialogTests(unittest.TestCase):
             self.assertEqual(dialog.preview_page_title.text(), "Secondary")
         finally:
             dialog.close()
+
+    def test_application_icon_is_applied_to_top_level_windows(self) -> None:
+        icon = QIcon(str(Path(__file__).resolve().parents[1] / "icons" / "keydeck.ico"))
+        previous_icon = self.app.windowIcon()
+        self.app.setWindowIcon(icon)
+        dialog = SettingsDialog(AppSettings(), [])
+        deck = DeckWindow(AppSettings(), [])
+        try:
+            self.assertFalse(icon.isNull())
+            self.assertEqual(dialog.windowIcon().cacheKey(), icon.cacheKey())
+            self.assertEqual(deck.windowIcon().cacheKey(), icon.cacheKey())
+        finally:
+            dialog.close()
+            deck.close()
+            self.app.setWindowIcon(previous_icon)
 
     def test_action_search_selects_a_visible_match(self) -> None:
         actions = [
@@ -214,6 +229,12 @@ class SettingsDialogTests(unittest.TestCase):
                     )
                     appearance_dialog.title_edit.setText("Run")
                     appearance_dialog.icon_edit.setText(str(icon_path))
+                    appearance_dialog.image_mode_combo.setCurrentIndex(
+                        appearance_dialog.image_mode_combo.findData("fit")
+                    )
+                    appearance_dialog.image_zoom_spin.setValue(1.35)
+                    appearance_dialog.image_offset_x_spin.setValue(7)
+                    appearance_dialog.image_offset_y_spin.setValue(-5)
                     appearance_dialog.accept()
 
                 QTimer.singleShot(0, set_appearance)
@@ -230,6 +251,14 @@ class SettingsDialogTests(unittest.TestCase):
                     saved.pages[0].slot_overrides["0"]["icon_path"],
                     str(icon_path),
                 )
+                self.assertEqual(
+                    saved.pages[0].slot_overrides["0"]["image_mode"],
+                    "fit",
+                )
+                self.assertEqual(
+                    saved.pages[0].slot_overrides["0"]["image_zoom"],
+                    1.35,
+                )
                 restored = AppSettings.from_dict(saved.to_dict())
                 deck = DeckWindow(restored, [action])
                 deck.show()
@@ -237,6 +266,10 @@ class SettingsDialogTests(unittest.TestCase):
                 deck_button = deck.grid_layout.itemAt(0).widget()
                 self.assertEqual(deck_button.label.text(), "Run")
                 self.assertFalse(deck_button.button._avatar.isNull())
+                self.assertEqual(deck_button.button._avatar_mode, "fit")
+                self.assertEqual(deck_button.button._avatar_zoom, 1.35)
+                self.assertEqual(deck_button.button._avatar_offset_x, 7)
+                self.assertEqual(deck_button.button._avatar_offset_y, -5)
             finally:
                 dialog.close()
                 if deck is not None:
@@ -355,12 +388,47 @@ class SettingsDialogTests(unittest.TestCase):
         try:
             self.assertEqual(dialog.plugin_list.count(), 1)
             self.assertEqual(dialog.plugin_status_label.text(), "Disabled")
+            self.assertIn("[Disabled]", dialog.plugin_list.item(0).text())
             self.assertFalse(dialog.plugin_enabled_toggle.isChecked())
+            self.assertEqual(dialog.plugin_enabled_toggle._position, 0.0)
 
             saved = dialog.to_settings()
 
             self.assertEqual(saved.disabled_plugins, ["sample"])
             self.assertEqual(saved.pages[0].slot_actions[0], "sample.run")
+        finally:
+            dialog.close()
+
+    def test_plugin_toggle_updates_state_label_switch_and_order(self) -> None:
+        settings = AppSettings(disabled_plugins=["sample", "zeta"])
+        plugins = [SamplePlugin()]
+        dialog = SettingsDialog(
+            settings,
+            [],
+            plugins=plugins,
+            available_plugins=[
+                PluginInfo("sample", "Sample plugin"),
+                PluginInfo("other", "Other plugin"),
+                PluginInfo("zeta", "Zeta plugin"),
+            ],
+        )
+        try:
+            self.assertEqual(
+                dialog.plugin_list.item(0).data(Qt.UserRole),
+                "other",
+            )
+            dialog.plugin_list.setCurrentRow(1)
+            self.assertFalse(dialog.plugin_enabled_toggle.isChecked())
+
+            dialog.plugin_enabled_toggle.setChecked(True)
+
+            self.assertEqual(dialog.plugin_status_label.text(), "Enabled")
+            self.assertTrue(dialog.plugin_enabled_toggle.isChecked())
+            self.assertEqual(dialog.plugin_enabled_toggle._position, 1.0)
+            self.assertEqual(dialog.plugin_list.item(2).data(Qt.UserRole), "zeta")
+            self.assertIn("[Enabled]", dialog.plugin_list.item(1).text())
+            self.assertIn("[Disabled]", dialog.plugin_list.item(2).text())
+            self.assertEqual(dialog.to_settings().disabled_plugins, ["zeta"])
         finally:
             dialog.close()
 

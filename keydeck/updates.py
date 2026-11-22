@@ -237,6 +237,7 @@ def apply_update(executable_path: Path, target_path: Path, pid: int) -> None:
         os.replace(target_path, backup_path)
         old_moved = True
         os.replace(temporary_path, target_path)
+        notify_shell_icon_changed(target_path)
         subprocess.Popen([str(target_path)], cwd=str(target_path.parent))
     except OSError as update_error:
         if old_moved:
@@ -256,6 +257,20 @@ def apply_update(executable_path: Path, target_path: Path, pid: int) -> None:
             schedule_helper_cleanup(backup_path)
     finally:
         temporary_path.unlink(missing_ok=True)
+
+
+def notify_shell_icon_changed(executable_path: Path) -> None:
+    if sys.platform != "win32":
+        return
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    shell32.SHChangeNotify.argtypes = [
+        ctypes.c_long,
+        ctypes.c_uint,
+        ctypes.c_wchar_p,
+        ctypes.c_void_p,
+    ]
+    shell32.SHChangeNotify.restype = None
+    shell32.SHChangeNotify(0x00002000, 0x0005, str(executable_path), None)
 
 
 def _show_update_error(message: str) -> None:

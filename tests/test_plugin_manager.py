@@ -58,7 +58,13 @@ class Plugin(PluginBase):
 """,
                 encoding="utf-8",
             )
-            manager = PluginManager(root / "plugins", data_dir=root / "data")
+            invoked: list[tuple[str, int]] = []
+            manager = PluginManager(
+                root / "plugins",
+                data_dir=root / "data",
+                get_assigned_slots=lambda: [{"action_id": f"{plugin_id}.run"}],
+                invoke_assigned_slot=lambda page_id, slot: invoked.append((page_id, slot)),
+            )
 
             self.assertEqual(
                 manager.discover_plugins(),
@@ -76,6 +82,12 @@ class Plugin(PluginBase):
             self.assertIn(f"keydeck_plugin_{plugin_id}", sys.modules)
             self.assertIn("lifecycle_test_helper", sys.modules)
             self.assertIn(str(plugin_dir), sys.path)
+            self.assertEqual(
+                manager.plugins[0].context.assigned_plugin_slots(),
+                [{"action_id": f"{plugin_id}.run"}],
+            )
+            manager.plugins[0].context.invoke_plugin_slot("main", 2)
+            self.assertEqual(invoked, [("main", 2)])
             self.assertEqual(
                 [action.action_id for action in manager.all_actions()],
                 [f"{plugin_id}.run"],

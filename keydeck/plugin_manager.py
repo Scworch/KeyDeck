@@ -12,6 +12,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Callable
 
 from keydeck.plugin_api import Action, PluginBase, PluginContext
 
@@ -28,6 +29,8 @@ class PluginManager:
         plugins_dir: Path,
         data_dir: Path | None = None,
         legacy_data_dir: Path | None = None,
+        get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None,
+        invoke_assigned_slot: Callable[[str, int], None] | None = None,
     ) -> None:
         self.plugins_dir = plugins_dir
         self.data_dir = data_dir or plugins_dir
@@ -38,6 +41,8 @@ class PluginManager:
         self.disabled_plugin_ids: frozenset[str] = frozenset()
         self._plugin_module_names: set[str] = set()
         self._initial_sys_path = list(sys.path)
+        self.get_assigned_slots = get_assigned_slots
+        self.invoke_assigned_slot = invoke_assigned_slot
 
     def discover_plugins(self) -> list[PluginInfo]:
         discovered: list[PluginInfo] = []
@@ -239,6 +244,8 @@ class PluginManager:
             settings_file=settings_file.resolve(),
             manifest=manifest,
             data_dir=plugin_data_dir,
+            get_assigned_slots=self.get_assigned_slots,
+            invoke_assigned_slot=self.invoke_assigned_slot,
         )
 
     def _load_manifest(self, manifest_path: Path) -> dict:

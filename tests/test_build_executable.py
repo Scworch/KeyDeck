@@ -19,6 +19,14 @@ class BuildExecutableTests(unittest.TestCase):
         self.assertTrue(
             is_build_source_file(Path("plugins") / "WaveLink" / "plugin.py")
         )
+        self.assertTrue(
+            is_build_source_file(
+                Path("plugins") / "ShortcutLauncher" / "manifest.json"
+            )
+        )
+        self.assertTrue(
+            is_build_source_file(Path("plugins") / "MultiTool" / "plugin.py")
+        )
         self.assertTrue(is_build_source_file(Path("keydeck") / "__main__.py"))
         self.assertTrue(is_build_source_file(Path("icons") / "settings.svg"))
 

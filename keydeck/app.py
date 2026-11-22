@@ -72,9 +72,14 @@ class KeyDeckApplication(QObject):
         self.qt_app = QApplication.instance() or QApplication(sys.argv)
         self.qt_app.setApplicationName("KeyDeck")
         self.qt_app.setQuitOnLastWindowClosed(False)
+        app_icon_path = ICONS_DIR / "keydeck.ico"
+        self.app_icon = QIcon(str(app_icon_path)) if app_icon_path.is_file() else QIcon()
+        if not self.app_icon.isNull():
+            self.qt_app.setWindowIcon(self.app_icon)
         apply_dark_theme(self.qt_app)
 
         self.settings: AppSettings = load_settings()
+        self._action_invocation_stack: list[tuple[str, int]] = []
         legacy_plugins_dir = (
             Path(sys.executable).resolve().parent / "plugins"
             if getattr(sys, "frozen", False)
@@ -84,6 +89,8 @@ class KeyDeckApplication(QObject):
             PLUGINS_DIR,
             data_dir=PLUGIN_DATA_DIR,
             legacy_data_dir=legacy_plugins_dir,
+            get_assigned_slots=self._assigned_plugin_slots,
+            invoke_assigned_slot=self._invoke_assigned_plugin_slot,
         )
         self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
         self.plugin_manager.start_plugins()
@@ -96,6 +103,8 @@ class KeyDeckApplication(QObject):
             settings=self.settings,
             actions=actions,
         )
+        if not self.app_icon.isNull():
+            self.deck_window.setWindowIcon(self.app_icon)
         self.deck_window.settings_requested.connect(self._open_settings)
         self.deck_window.action_requested.connect(self._run_action)
         self.deck_window.page_changed.connect(self._on_page_changed)
@@ -475,9 +484,29 @@ class KeyDeckApplication(QObject):
             self.check_for_updates()
 
 
-    def _run_action(self, action: Action | None, slot: int = -1, page_index: int = 0) -> None:
+    def _run_action(
+        self,
+        action: Action | None,
+        slot: int = -1,
+        page_index: int = 0,
+        propagate_errors: bool = False,
+    ) -> None:
         if action is None:
             return
+
+        invocation_key: tuple[str, int] | None = None
+        if 0 <= page_index < len(self.settings.pages) and slot >= 0:
+            invocation_key = (self.settings.pages[page_index].page_id, slot)
+            if invocation_key in self._action_invocation_stack:
+                if propagate_errors:
+                    raise RuntimeError("Multi-tool action loop detected")
+                QMessageBox.warning(
+                    self.deck_window,
+                    "Action loop",
+                    "This action is already running in the current multi-tool sequence.",
+                )
+                return
+            self._action_invocation_stack.append(invocation_key)
 
         try:
             # Check if callback expects a slot argument
@@ -492,8 +521,13 @@ class KeyDeckApplication(QObject):
             else:
                 action.callback()
         except Exception as exc:  # noqa: BLE001
+            if propagate_errors:
+                raise
             QMessageBox.critical(self.deck_window, "Action Failed", str(exc))
             return
+        finally:
+            if invocation_key is not None:
+                self._action_invocation_stack.pop()
 
         actions = self.plugin_manager.all_actions()
         self._normalize_settings_actions(actions, persist=True)
@@ -520,6 +554,59 @@ class KeyDeckApplication(QObject):
     def _settings_actions_changed(self, actions: list[Action]) -> None:
         self.deck_window.update_actions(actions)
         self.deck_window.apply_settings(self.settings)
+
+    def _assigned_plugin_slots(self) -> list[dict]:
+        actions_by_id = {
+            action.action_id: action
+            for action in self.plugin_manager.all_actions()
+        }
+        slots: list[dict] = []
+        for page_index, page in enumerate(self.settings.pages):
+            for slot, action_id in enumerate(page.slot_actions):
+                action = actions_by_id.get(action_id) if action_id else None
+                if action is None or action.plugin_id == "core":
+                    continue
+                slots.append(
+                    {
+                        "page_id": page.page_id,
+                        "page_name": page.name,
+                        "page_index": page_index,
+                        "slot": slot,
+                        "action_id": action.action_id,
+                        "title": action.title,
+                        "plugin_id": action.plugin_id,
+                    }
+                )
+        return slots
+
+    def _invoke_assigned_plugin_slot(self, page_id: str, slot: int) -> None:
+        page_index = next(
+            (
+                index
+                for index, page in enumerate(self.settings.pages)
+                if page.page_id == page_id
+            ),
+            None,
+        )
+        if page_index is None:
+            raise ValueError("The selected plugin button page no longer exists")
+        page = self.settings.pages[page_index]
+        if not 0 <= slot < len(page.slot_actions):
+            raise ValueError("The selected plugin button no longer exists")
+        action_id = page.slot_actions[slot]
+        action = next(
+            (
+                item
+                for item in self.deck_window.actions
+                if item.action_id == action_id
+            ),
+            None,
+        )
+        if action is None or action.plugin_id == "core":
+            raise ValueError("The selected plugin button action is unavailable")
+        if (page_id, slot) in self._action_invocation_stack:
+            raise RuntimeError("Multi-tool action loop detected")
+        self._run_action(action, slot, page_index, propagate_errors=True)
 
     def _clear_deck_plugin_references(self) -> None:
         self.deck_window.update_actions([])

@@ -119,6 +119,8 @@ class UpdateTests(unittest.TestCase):
             settings.write_text('{"keep": true}', encoding="utf-8")
 
             with patch("keydeck.updates.wait_for_process_exit"), patch(
+                "keydeck.updates.notify_shell_icon_changed"
+            ) as notify_icon, patch(
                 "keydeck.updates.subprocess.Popen"
             ):
                 apply_update(staged, current, 1234)
@@ -126,6 +128,37 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(current.read_bytes(), b"MZ-new")
             self.assertEqual(settings.read_text(encoding="utf-8"), '{"keep": true}')
             self.assertFalse(current.with_name(".KeyDeck.exe.backup-1234").exists())
+            notify_icon.assert_called_once_with(current.resolve())
+            self.assertEqual(current.name, "KeyDeck.exe")
+
+    def test_slot_image_options_are_normalized_and_preserved(self) -> None:
+        settings = AppSettings.from_dict(
+            {
+                "pages": [
+                    {
+                        "rows": 1,
+                        "columns": 1,
+                        "slot_overrides": {
+                            "0": {
+                                "image_mode": "fit",
+                                "image_zoom": 4.5,
+                                "image_offset_x": -700,
+                                "image_offset_y": 12,
+                            }
+                        },
+                    }
+                ]
+            }
+        )
+        self.assertEqual(
+            settings.pages[0].slot_overrides["0"],
+            {
+                "image_mode": "fit",
+                "image_zoom": 3.0,
+                "image_offset_x": -500,
+                "image_offset_y": 12,
+            },
+        )
 
     def test_update_rolls_back_if_restart_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

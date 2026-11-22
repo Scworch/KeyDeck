@@ -70,8 +70,8 @@ class SquircleButton(QPushButton):
             self._scaled_avatar = QPixmap()
             self._avatar_mode = "cover"
         else:
-            if icon_mode == "centered":
-                self._avatar_mode = "centered"
+            if icon_mode in {"fill", "fit", "crop", "centered"}:
+                self._avatar_mode = icon_mode
             else:
                 self._avatar_mode = "contain"
             path = str(Path(icon_path).resolve())
@@ -220,7 +220,16 @@ class SquircleButton(QPushButton):
 
         rect_width = float(size - 2)
         rect_height = float(size - 2)
-        if icon_mode == "centered":
+        if icon_mode == "fill":
+            width, height = rect_width * zoom, rect_height * zoom
+            aspect_mode = Qt.AspectRatioMode.IgnoreAspectRatio
+        elif icon_mode == "fit":
+            width, height = rect_width * zoom, rect_height * zoom
+            aspect_mode = Qt.AspectRatioMode.KeepAspectRatio
+        elif icon_mode == "crop":
+            width, height = rect_width * zoom, rect_height * zoom
+            aspect_mode = Qt.AspectRatioMode.KeepAspectRatioByExpanding
+        elif icon_mode == "centered":
             width, height = rect_width * 0.74 * zoom, rect_height * 0.74 * zoom
             aspect_mode = Qt.AspectRatioMode.KeepAspectRatio
         elif icon_mode == "contain":

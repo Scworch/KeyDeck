@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFrame,
     QFormLayout,
@@ -176,12 +177,16 @@ class ButtonAppearanceDialog(QDialog):
         self,
         title: str,
         icon_path: str,
+        image_mode: str = "crop",
+        image_zoom: float = 1.0,
+        image_offset_x: int = 0,
+        image_offset_y: int = 0,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Button appearance")
         self.setModal(True)
-        size_dialog(self, 560, 300, 460, 260)
+        size_dialog(self, 600, 500, 500, 440)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
@@ -218,6 +223,36 @@ class ButtonAppearanceDialog(QDialog):
         clear_button.clicked.connect(self.icon_edit.clear)
         icon_layout.addWidget(clear_button)
         form.addRow("Custom icon", icon_row)
+
+        self.image_mode_combo = QComboBox(self)
+        self.image_mode_combo.addItem("Fill (stretch)", "fill")
+        self.image_mode_combo.addItem("Fit (show whole image)", "fit")
+        self.image_mode_combo.addItem("Crop (fill without distortion)", "crop")
+        for index in range(self.image_mode_combo.count()):
+            if self.image_mode_combo.itemData(index) == image_mode:
+                self.image_mode_combo.setCurrentIndex(index)
+                break
+        form.addRow("Image display", self.image_mode_combo)
+
+        self.image_zoom_spin = QDoubleSpinBox(self)
+        self.image_zoom_spin.setRange(0.2, 3.0)
+        self.image_zoom_spin.setSingleStep(0.05)
+        self.image_zoom_spin.setDecimals(2)
+        self.image_zoom_spin.setSuffix("×")
+        self.image_zoom_spin.setValue(max(0.2, min(image_zoom, 3.0)))
+        form.addRow("Image size", self.image_zoom_spin)
+
+        self.image_offset_x_spin = QSpinBox(self)
+        self.image_offset_x_spin.setRange(-500, 500)
+        self.image_offset_x_spin.setSuffix(" px")
+        self.image_offset_x_spin.setValue(image_offset_x)
+        form.addRow("Horizontal offset", self.image_offset_x_spin)
+
+        self.image_offset_y_spin = QSpinBox(self)
+        self.image_offset_y_spin.setRange(-500, 500)
+        self.image_offset_y_spin.setSuffix(" px")
+        self.image_offset_y_spin.setValue(image_offset_y)
+        form.addRow("Vertical offset", self.image_offset_y_spin)
         layout.addLayout(form)
 
         button_box = QDialogButtonBox(
@@ -416,7 +451,7 @@ class PreviewDeckButtonWidget(QWidget):
         self,
         action: Action | None,
         settings: dict | None = None,
-        overrides: dict[str, str] | None = None,
+        overrides: dict | None = None,
     ) -> None:
         self.current_action = action
         if action is None:
@@ -437,12 +472,24 @@ class PreviewDeckButtonWidget(QWidget):
             icon_path = custom_icon_path
 
         self.button.set_show_plus(False)
+        icon_mode = overrides.get("image_mode", action.icon_mode) if overrides else action.icon_mode
+        icon_zoom = overrides.get("image_zoom", action.icon_zoom) if overrides else action.icon_zoom
+        icon_offset_x = (
+            overrides.get("image_offset_x", action.icon_offset_x)
+            if overrides
+            else action.icon_offset_x
+        )
+        icon_offset_y = (
+            overrides.get("image_offset_y", action.icon_offset_y)
+            if overrides
+            else action.icon_offset_y
+        )
         self.button.set_avatar(
             icon_path,
-            icon_mode=action.icon_mode,
-            icon_zoom=action.icon_zoom,
-            icon_offset_x=action.icon_offset_x,
-            icon_offset_y=action.icon_offset_y,
+            icon_mode=icon_mode,
+            icon_zoom=icon_zoom,
+            icon_offset_x=icon_offset_x,
+            icon_offset_y=icon_offset_y,
         )
         self.button.set_settings_enabled(action.settings_callback is not None or action.action_settings_callback is not None)
         
@@ -700,11 +747,11 @@ class SettingsDialog(QDialog):
         self._current_page.slot_settings = settings
 
     @property
-    def _slot_overrides(self) -> dict[str, dict[str, str]]:
+    def _slot_overrides(self) -> dict[str, dict]:
         return self._current_page.slot_overrides
 
     @_slot_overrides.setter
-    def _slot_overrides(self, overrides: dict[str, dict[str, str]]) -> None:
+    def _slot_overrides(self, overrides: dict[str, dict]) -> None:
         self._current_page.slot_overrides = overrides
 
     def _select_section(self, section_index: int) -> None:
@@ -1136,9 +1183,20 @@ class SettingsDialog(QDialog):
         self.plugin_list.blockSignals(True)
         self.plugin_list.clear()
         selected_row = 0
-        for index, plugin_info in enumerate(self.available_plugins):
-            item = QListWidgetItem(plugin_info.plugin_name)
+        ordered_plugins = sorted(
+            self.available_plugins,
+            key=lambda plugin: (
+                plugin.plugin_id in self._disabled_plugins,
+                plugin.plugin_name.casefold(),
+            ),
+        )
+        self.available_plugins = ordered_plugins
+        for index, plugin_info in enumerate(ordered_plugins):
+            disabled = plugin_info.plugin_id in self._disabled_plugins
+            status = "Disabled" if disabled else "Enabled"
+            item = QListWidgetItem(f"{plugin_info.plugin_name}  [{status}]")
             item.setData(Qt.UserRole, plugin_info.plugin_id)
+            item.setData(Qt.UserRole + 1, status)
             item.setToolTip(plugin_info.plugin_id)
             self.plugin_list.addItem(item)
             if plugin_info.plugin_id == selected_plugin_id:
@@ -1192,7 +1250,7 @@ class SettingsDialog(QDialog):
         self.plugin_name_label.setText(plugin_name)
         self.plugin_id_label.setText(plugin_id)
         self.plugin_status_label.setText(
-            "Disabled" if disabled else "Loaded" if plugin is not None or action_count else "Not loaded"
+            "Disabled" if disabled else "Enabled"
         )
         if disabled:
             summary = (
@@ -1248,7 +1306,11 @@ class SettingsDialog(QDialog):
             self._disabled_plugins.discard(plugin_id)
         else:
             self._disabled_plugins.add(plugin_id)
-        self._show_plugin_details(self.plugin_list.currentRow())
+        self._populate_plugin_list(
+            self.plugins,
+            self.plugin_errors,
+            self.available_plugins,
+        )
 
     def _refresh_plugin_actions(self) -> None:
         if self._refresh_actions_callback is not None:
@@ -1678,7 +1740,11 @@ class SettingsDialog(QDialog):
         dialog = ButtonAppearanceDialog(
             current_title,
             overrides.get("icon_path", ""),
-            self,
+            image_mode=overrides.get("image_mode", "crop"),
+            image_zoom=overrides.get("image_zoom", 1.0),
+            image_offset_x=overrides.get("image_offset_x", 0),
+            image_offset_y=overrides.get("image_offset_y", 0),
+            parent=self,
         )
         if not dialog.exec():
             return
@@ -1693,6 +1759,10 @@ class SettingsDialog(QDialog):
             overrides["icon_path"] = icon_path
         else:
             overrides.pop("icon_path", None)
+        overrides["image_mode"] = dialog.image_mode_combo.currentData()
+        overrides["image_zoom"] = dialog.image_zoom_spin.value()
+        overrides["image_offset_x"] = dialog.image_offset_x_spin.value()
+        overrides["image_offset_y"] = dialog.image_offset_y_spin.value()
 
         if overrides:
             self._slot_overrides[slot_key] = overrides

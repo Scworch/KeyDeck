@@ -63,6 +63,9 @@ class DeckWindow(QWidget):
         self._prewarm_scheduled = False
 
         self.setWindowTitle("KeyDeck")
+        app = QApplication.instance()
+        if app is not None and not app.windowIcon().isNull():
+            self.setWindowIcon(app.windowIcon())
         self.setObjectName("DeckWindow")
         self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_ShowWithoutActivating, False)
@@ -314,15 +317,31 @@ class DeckWindow(QWidget):
             if slot_overrides.get("title"):
                 title = slot_overrides["title"]
 
+            icon_mode = slot_overrides.get(
+                "image_mode",
+                action.icon_mode if action else "default",
+            )
+            icon_zoom = slot_overrides.get(
+                "image_zoom",
+                action.icon_zoom if action else 1.0,
+            )
+            icon_offset_x = slot_overrides.get(
+                "image_offset_x",
+                action.icon_offset_x if action else 0,
+            )
+            icon_offset_y = slot_overrides.get(
+                "image_offset_y",
+                action.icon_offset_y if action else 0,
+            )
             button_widget = DeckButtonWidget(
                 index=index,
                 title=title,
                 size=metrics.button_size,
                 icon_path=icon_path,
-                icon_mode=action.icon_mode if action else "default",
-                icon_zoom=action.icon_zoom if action else 1.0,
-                icon_offset_x=action.icon_offset_x if action else 0,
-                icon_offset_y=action.icon_offset_y if action else 0,
+                icon_mode=icon_mode,
+                icon_zoom=icon_zoom,
+                icon_offset_x=icon_offset_x,
+                icon_offset_y=icon_offset_y,
                 parent=grid_widget,
             )
             button_widget.clicked.connect(self._on_button_clicked)

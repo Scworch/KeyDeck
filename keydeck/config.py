@@ -47,7 +47,7 @@ class DeckPage:
     columns: int = 4
     slot_actions: list[str | None] = field(default_factory=list)
     slot_settings: dict[str, dict[str, Any]] = field(default_factory=dict)
-    slot_overrides: dict[str, dict[str, str]] = field(default_factory=dict)
+    slot_overrides: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], index: int) -> "DeckPage":
@@ -90,18 +90,32 @@ class DeckPage:
         return self
 
 
-def _normalize_slot_overrides(raw: Any) -> dict[str, dict[str, str]]:
+def _normalize_slot_overrides(raw: Any) -> dict[str, dict[str, Any]]:
     if not isinstance(raw, dict):
         return {}
-    normalized: dict[str, dict[str, str]] = {}
+    normalized: dict[str, dict[str, Any]] = {}
     for key, value in raw.items():
         if not str(key).isdigit() or not isinstance(value, dict):
             continue
-        override: dict[str, str] = {}
+        override: dict[str, Any] = {}
         for field_name in ("title", "icon_path"):
             field_value = value.get(field_name)
             if isinstance(field_value, str) and field_value.strip():
                 override[field_name] = field_value.strip()
+        image_mode = value.get("image_mode")
+        if isinstance(image_mode, str) and image_mode in {"fill", "fit", "crop"}:
+            override["image_mode"] = image_mode
+        image_zoom = value.get("image_zoom")
+        if isinstance(image_zoom, (int, float)) and not isinstance(image_zoom, bool):
+            try:
+                if math.isfinite(image_zoom):
+                    override["image_zoom"] = max(0.2, min(float(image_zoom), 3.0))
+            except (OverflowError, ValueError):
+                pass
+        for field_name in ("image_offset_x", "image_offset_y"):
+            field_value = value.get(field_name)
+            if isinstance(field_value, int) and not isinstance(field_value, bool):
+                override[field_name] = max(-500, min(field_value, 500))
         if override:
             normalized[str(key)] = override
     return normalized

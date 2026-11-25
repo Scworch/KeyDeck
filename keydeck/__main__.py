@@ -8,6 +8,10 @@ if __name__ == "__main__":
         from keydeck.updates import run_updater
 
         raise SystemExit(run_updater(sys.argv[2:]))
+    if len(sys.argv) > 1 and sys.argv[1] == "--uninstall":
+        from keydeck.uninstall import run_uninstaller
+
+        raise SystemExit(run_uninstaller(sys.argv[2:]))
 
     if sys.platform == "win32":
         from keydeck.admin import is_admin, restart_as_admin

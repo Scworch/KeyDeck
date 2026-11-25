@@ -9,6 +9,7 @@ from PySide6.QtCore import QMimeData, QPoint, QPointF, QRect, QRectF, QSize, Qt,
 from PySide6.QtGui import QColor, QDrag, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QPixmap, QLinearGradient
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -624,6 +625,7 @@ class SettingsDialog(QDialog):
         self._plugin_store = plugin_store
         self._plugin_library_before_mutation = plugin_library_before_mutation
         self._source_plugin_ids = source_plugin_ids or set()
+        self.uninstall_preserve_user_data: bool | None = None
         self._action_by_id = {action.action_id: action for action in actions}
         self._pages = deepcopy(settings.pages) or [
             DeckPage(
@@ -1610,10 +1612,61 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(startup_card)
         layout.addWidget(interaction_card)
+        if getattr(sys, "frozen", False):
+            uninstall_card = QFrame(content)
+            uninstall_card.setObjectName("Card")
+            uninstall_layout = QVBoxLayout(uninstall_card)
+            uninstall_layout.setContentsMargins(18, 18, 18, 18)
+            uninstall_layout.setSpacing(10)
+
+            uninstall_title = QLabel("Uninstall KeyDeck", uninstall_card)
+            uninstall_title.setObjectName("SectionTitle")
+            uninstall_layout.addWidget(uninstall_title)
+            uninstall_description = QLabel(
+                "Remove the KeyDeck executable, its Windows startup task, and standard shortcuts.",
+                uninstall_card,
+            )
+            uninstall_description.setObjectName("PageSubtitle")
+            uninstall_description.setWordWrap(True)
+            uninstall_layout.addWidget(uninstall_description)
+
+            self.uninstall_button = QPushButton("Uninstall KeyDeck", uninstall_card)
+            self.uninstall_button.setObjectName("DangerButton")
+            self.uninstall_button.clicked.connect(self._confirm_uninstall)
+            uninstall_layout.addWidget(self.uninstall_button, 0, Qt.AlignLeft)
+            layout.addWidget(uninstall_card)
         layout.addStretch(1)
         scroll.setWidget(content)
         page_layout.addWidget(scroll)
         return page
+
+    def _confirm_uninstall(self) -> None:
+        keep_data = QCheckBox(
+            "Keep settings, plugin data, installed plugins, and backups"
+        )
+        keep_data.setChecked(True)
+        confirmation = QMessageBox(self)
+        confirmation.setIcon(QMessageBox.Icon.Warning)
+        confirmation.setWindowTitle("Uninstall KeyDeck")
+        confirmation.setText(
+            "KeyDeck will close and remove its executable, startup task, and standard shortcuts."
+        )
+        confirmation.setInformativeText(
+            "If the box is unchecked, all KeyDeck data under "
+            "%LOCALAPPDATA%\\KeyDeck will also be deleted."
+        )
+        confirmation.setCheckBox(keep_data)
+        confirmation.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel
+        )
+        uninstall_button = confirmation.button(QMessageBox.StandardButton.Yes)
+        if uninstall_button is not None:
+            uninstall_button.setText("Uninstall")
+        confirmation.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if confirmation.exec() != QMessageBox.StandardButton.Yes:
+            return
+        self.uninstall_preserve_user_data = keep_data.isChecked()
+        self.accept()
 
     def _build_updates_page(self) -> QWidget:
         page = QWidget(self)

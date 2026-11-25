@@ -29,6 +29,7 @@ from keydeck.config import (
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo, PluginManager
 from keydeck.plugin_store import PluginStore
+from keydeck.uninstall import launch_uninstaller
 from keydeck.updates import (
     Release,
     UpdateCancelled,
@@ -324,6 +325,22 @@ class KeyDeckApplication(QObject):
             self._settings_dialog = dialog
 
             if dialog.exec():
+                if dialog.uninstall_preserve_user_data is not None:
+                    try:
+                        launch_uninstaller(
+                            Path(sys.executable),
+                            os.getpid(),
+                            preserve_user_data=dialog.uninstall_preserve_user_data,
+                        )
+                    except (OSError, RuntimeError, ValueError) as exc:
+                        QMessageBox.critical(
+                            self.deck_window,
+                            "Uninstall KeyDeck",
+                            f"Could not start the uninstaller:\n\n{exc}",
+                        )
+                    else:
+                        self.qt_app.quit()
+                    return
                 new_settings = dialog.to_settings().clamp()
                 task_changed = (
                     self._autostart_task_needs_retry

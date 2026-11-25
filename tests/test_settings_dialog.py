@@ -4,6 +4,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -11,6 +12,7 @@ from PySide6.QtCore import QPoint, QTimer, Qt
 from PySide6.QtGui import QColor, QContextMenuEvent, QIcon, QPixmap
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMenu
+from PySide6.QtWidgets import QMessageBox
 
 from keydeck.config import AppSettings, DeckPage
 from keydeck.plugin_api import Action, PluginBase
@@ -60,6 +62,58 @@ class SettingsDialogTests(unittest.TestCase):
             self.assertEqual((saved.pages[0].rows, saved.pages[0].columns), (3, 3))
             self.assertEqual((saved.pages[1].rows, saved.pages[1].columns), (4, 5))
             self.assertEqual(dialog.preview_page_title.text(), "Secondary")
+        finally:
+            dialog.close()
+
+    def test_release_build_shows_uninstall_confirmation_with_data_preserved_by_default(self) -> None:
+        dialog = None
+        with patch("keydeck.ui.settings_dialog.sys.frozen", True, create=True):
+            dialog = SettingsDialog(AppSettings(), [])
+        checkboxes = []
+        set_checkbox = QMessageBox.setCheckBox
+
+        def capture_checkbox(message_box, checkbox) -> None:
+            checkboxes.append(checkbox)
+            set_checkbox(message_box, checkbox)
+
+        try:
+            with (
+                patch.object(QMessageBox, "setCheckBox", capture_checkbox),
+                patch.object(
+                    QMessageBox,
+                    "exec",
+                    return_value=QMessageBox.StandardButton.Yes,
+                ),
+            ):
+                dialog._confirm_uninstall()
+
+            self.assertEqual(len(checkboxes), 1)
+            self.assertTrue(checkboxes[0].isChecked())
+            self.assertTrue(dialog.uninstall_preserve_user_data)
+        finally:
+            dialog.close()
+
+    def test_uninstall_confirmation_can_choose_to_delete_user_data(self) -> None:
+        with patch("keydeck.ui.settings_dialog.sys.frozen", True, create=True):
+            dialog = SettingsDialog(AppSettings(), [])
+        set_checkbox = QMessageBox.setCheckBox
+
+        def uncheck_data_box(message_box, checkbox) -> None:
+            checkbox.setChecked(False)
+            set_checkbox(message_box, checkbox)
+
+        try:
+            with (
+                patch.object(QMessageBox, "setCheckBox", uncheck_data_box),
+                patch.object(
+                    QMessageBox,
+                    "exec",
+                    return_value=QMessageBox.StandardButton.Yes,
+                ),
+            ):
+                dialog._confirm_uninstall()
+
+            self.assertFalse(dialog.uninstall_preserve_user_data)
         finally:
             dialog.close()
 

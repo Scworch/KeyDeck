@@ -2,6 +2,7 @@
   "id": "WQS",
   "name": "WQS - Windows Quick Start",
   "version": "1.0.0",
+  "description": "Create and launch Windows Quick Start presets for selected apps, actions, and network profiles.",
   "entry": "plugin.py",
   "settings": "settings.json"
 }

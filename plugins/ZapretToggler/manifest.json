@@ -2,7 +2,7 @@
   "id": "ZapretToggler",
   "name": "Zapret Toggler",
   "version": "0.1.0",
-  "description": "Controls the locally installed Zapret service and its network configuration.",
+  "description": "Manage the local Zapret service and its network configuration.",
   "min_keydeck_version": "0.3.0",
   "permissions": ["process", "system_network"],
   "entry": "plugin.py",

@@ -2,7 +2,7 @@
   "id": "GtaClearSession",
   "name": "GTA Clear Session",
   "version": "0.1.0",
-  "description": "Clears the GTA session using the configured game action.",
+  "description": "Run the configured GTA session cleanup action.",
   "min_keydeck_version": "0.3.0",
   "action_prefixes": ["gta_clear_session"],
   "permissions": ["process", "filesystem"],

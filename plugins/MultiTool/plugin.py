@@ -7,7 +7,7 @@ import webbrowser
 from pathlib import Path
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -38,7 +38,9 @@ STEP_TYPES = {
     "program": "Open program",
     "url": "Open web link",
     "command": "Run a Win+R command",
-    "plugin": "Press another plugin button",
+    "plugin": "Legacy assigned plugin button",
+    "plugin_action": "Run plugin action",
+    "delay": "Wait",
 }
 
 
@@ -77,7 +79,7 @@ class SequenceStepCard(QFrame):
         type_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         detail = (
             step.get("label", "Plugin button")
-            if step.get("type") == "plugin"
+            if step.get("type") in {"plugin", "plugin_action"}
             else step.get("value", "")
         )
         detail_label = QLabel(str(detail), self)
@@ -115,14 +117,16 @@ class SequenceEditorDialog(QDialog):
     def __init__(
         self,
         steps: list[dict],
-        plugin_slots: list[dict],
+        plugin_actions: list[Action],
+        plugin_slots: list[dict] | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("MultiTool sequence")
         self.setModal(True)
         size_dialog(self, 820, 740, 650, 540)
-        self.plugin_slots = plugin_slots
+        self.plugin_actions = plugin_actions
+        self.plugin_slots = plugin_slots or []
         self.setMinimumWidth(650)
 
         layout = QVBoxLayout(self)
@@ -224,7 +228,7 @@ class SequenceEditorDialog(QDialog):
 
     def _step_label(self, step: dict) -> str:
         label = STEP_TYPES.get(step.get("type"), "Unknown step")
-        if step.get("type") == "plugin":
+        if step.get("type") in {"plugin", "plugin_action"}:
             detail = step.get("label", "Plugin button")
         else:
             detail = step.get("value", "")
@@ -236,7 +240,8 @@ class SequenceEditorDialog(QDialog):
             ("program", "Program (.exe)"),
             ("url", "Web link"),
             ("command", "Win+R command / deep link"),
-            ("plugin", "Another plugin button"),
+            ("plugin_action", "Any installed plugin action"),
+            ("delay", "Delay between actions"),
         )
         for step_type, title in step_types:
             action = QAction(title, menu)
@@ -285,6 +290,74 @@ class SequenceEditorDialog(QDialog):
                 QMessageBox.warning(self, "MultiTool", "Web links must use http or https.")
                 return
             step = {"type": step_type, "value": text}
+        elif step_type == "delay":
+            try:
+                default_milliseconds = int(initial.get("milliseconds", 1000))
+            except (TypeError, ValueError, OverflowError):
+                default_milliseconds = 1000
+            milliseconds, accepted = QInputDialog.getInt(
+                self,
+                "Delay between actions",
+                "Wait time (milliseconds):",
+                max(0, min(default_milliseconds, 600000)),
+                0,
+                600000,
+                100,
+            )
+            if not accepted:
+                return
+            step = {"type": "delay", "milliseconds": milliseconds}
+        elif step_type == "plugin_action":
+            actions = [
+                action
+                for action in self.plugin_actions
+                if action.plugin_id not in {"core", "MultiTool"}
+            ]
+            if not actions:
+                QMessageBox.information(
+                    self,
+                    "MultiTool",
+                    "No other installed plugin actions are available.",
+                )
+                return
+            labels = [f"{action.plugin_id} · {action.title}" for action in actions]
+            selected_id = str(initial.get("action_id", ""))
+            initial_index = next(
+                (
+                    index
+                    for index, action in enumerate(actions)
+                    if action.action_id == selected_id
+                ),
+                0,
+            )
+            selected, accepted = QInputDialog.getItem(
+                self,
+                "Plugin action",
+                "Choose an installed plugin action:",
+                labels,
+                initial_index,
+                False,
+            )
+            if not accepted:
+                return
+            action = actions[labels.index(selected)]
+            current_settings = initial.get("settings", {})
+            action_settings = (
+                dict(current_settings)
+                if isinstance(current_settings, dict)
+                else {}
+            )
+            if action.action_settings_callback is not None:
+                configured = action.action_settings_callback(0, action_settings)
+                if configured is None:
+                    return
+                action_settings = configured
+            step = {
+                "type": "plugin_action",
+                "action_id": action.action_id,
+                "settings": action_settings,
+                "label": labels[labels.index(selected)],
+            }
         elif step_type == "plugin":
             slots = [
                 slot
@@ -385,6 +458,20 @@ class Plugin(PluginBase):
     plugin_id = "MultiTool"
     plugin_name = "MultiTool"
 
+    def __init__(self, context=None) -> None:
+        super().__init__(context)
+        self._sequence_steps: list[dict] = []
+        self._sequence_index = 0
+        self._sequence_running = False
+        self._sequence_timer = QTimer()
+        self._sequence_timer.setSingleShot(True)
+        self._sequence_timer.timeout.connect(self._continue_sequence)
+
+    def stop(self) -> None:
+        self._sequence_timer.stop()
+        self._sequence_steps = []
+        self._sequence_running = False
+
     def actions(self) -> list[Action]:
         return [
             Action(
@@ -402,12 +489,22 @@ class Plugin(PluginBase):
         parent = QApplication.activeModalWidget() or QApplication.activeWindow()
         raw_steps = settings.get("steps", [])
         steps = [dict(step) for step in raw_steps if isinstance(step, dict)] if isinstance(raw_steps, list) else []
+        plugin_actions = (
+            self.context.available_plugin_actions()
+            if self.context is not None
+            else []
+        )
         plugin_slots = (
             self.context.assigned_plugin_slots()
             if self.context is not None
             else []
         )
-        dialog = SequenceEditorDialog(steps, plugin_slots, parent)
+        dialog = SequenceEditorDialog(
+            steps,
+            plugin_actions,
+            plugin_slots,
+            parent,
+        )
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return None
         return {"steps": dialog.result_steps()}
@@ -415,35 +512,90 @@ class Plugin(PluginBase):
     def _run_sequence(self, settings: dict | None = None) -> None:
         if not isinstance(settings, dict):
             return
-        for index, step in enumerate(settings.get("steps", [])):
-            if not isinstance(step, dict) or step.get("enabled") is False:
+        if self._sequence_running:
+            QMessageBox.information(
+                QApplication.activeWindow(),
+                "MultiTool",
+                "A MultiTool sequence is already running.",
+            )
+            return
+        raw_steps = settings.get("steps", [])
+        self._sequence_steps = (
+            [dict(step) for step in raw_steps if isinstance(step, dict)]
+            if isinstance(raw_steps, list)
+            else []
+        )
+        self._sequence_index = 0
+        self._sequence_running = bool(self._sequence_steps)
+        self._continue_sequence()
+
+    def _continue_sequence(self) -> None:
+        while self._sequence_index < len(self._sequence_steps):
+            step_index = self._sequence_index
+            step = self._sequence_steps[step_index]
+            self._sequence_index += 1
+            if step.get("enabled") is False:
                 continue
-            step_type = step.get("type")
+            if step.get("type") == "delay":
+                try:
+                    milliseconds = int(step.get("milliseconds", 0))
+                except (TypeError, ValueError, OverflowError):
+                    self._fail_step(step_index, ValueError("Invalid delay value"))
+                    return
+                self._sequence_timer.start(max(0, min(milliseconds, 600000)))
+                return
             try:
-                if step_type == "program":
-                    path = Path(str(step.get("value", ""))).expanduser()
-                    if path.suffix.casefold() != ".exe" or not path.is_file():
-                        raise FileNotFoundError(f"Program not found: {path}")
-                    subprocess.Popen([str(path)], cwd=str(path.parent))
-                elif step_type == "url":
-                    url = str(step.get("value", ""))
-                    if urlparse(url).scheme.casefold() not in {"http", "https"}:
-                        raise ValueError(f"Invalid web link: {url}")
-                    if not webbrowser.open(url):
-                        raise RuntimeError(f"No browser accepted the link: {url}")
-                elif step_type == "command":
-                    self._run_windows_command(str(step.get("value", "")))
-                elif step_type == "plugin":
-                    if self.context is None:
-                        raise RuntimeError("Plugin context is not available")
-                    self.context.invoke_plugin_slot(
-                        str(step.get("page_id", "")),
-                        int(step.get("slot", -1)),
-                    )
-                else:
-                    raise ValueError(f"Unknown MultiTool step type: {step_type}")
+                self._execute_step(step)
             except Exception as exc:
-                raise RuntimeError(f"MultiTool step {index + 1} failed: {exc}") from exc
+                self._fail_step(step_index, exc)
+                return
+        self._sequence_steps = []
+        self._sequence_running = False
+
+    def _execute_step(self, step: dict) -> None:
+        step_type = step.get("type")
+        if step_type == "program":
+            path = Path(str(step.get("value", ""))).expanduser()
+            if path.suffix.casefold() != ".exe" or not path.is_file():
+                raise FileNotFoundError(f"Program not found: {path}")
+            subprocess.Popen([str(path)], cwd=str(path.parent))
+        elif step_type == "url":
+            url = str(step.get("value", ""))
+            if urlparse(url).scheme.casefold() not in {"http", "https"}:
+                raise ValueError(f"Invalid web link: {url}")
+            if not webbrowser.open(url):
+                raise RuntimeError(f"No browser accepted the link: {url}")
+        elif step_type == "command":
+            self._run_windows_command(str(step.get("value", "")))
+        elif step_type == "plugin":
+            if self.context is None:
+                raise RuntimeError("Plugin context is not available")
+            self.context.invoke_plugin_slot(
+                str(step.get("page_id", "")),
+                int(step.get("slot", -1)),
+            )
+        elif step_type == "plugin_action":
+            if self.context is None:
+                raise RuntimeError("Plugin context is not available")
+            action_id = str(step.get("action_id", ""))
+            if not action_id:
+                raise ValueError("Choose a plugin action for this step")
+            settings = step.get("settings", {})
+            self.context.invoke_action(
+                action_id,
+                settings if isinstance(settings, dict) else {},
+            )
+        else:
+            raise ValueError(f"Unknown MultiTool step type: {step_type}")
+
+    def _fail_step(self, step_index: int, error: Exception) -> None:
+        self._sequence_steps = []
+        self._sequence_running = False
+        QMessageBox.critical(
+            QApplication.activeWindow(),
+            "MultiTool",
+            f"Step {step_index + 1} failed: {error}",
+        )
 
     def _run_windows_command(self, command: str) -> None:
         if not command.strip():

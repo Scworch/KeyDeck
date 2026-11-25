@@ -29,12 +29,18 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpinBox,
     QStackedWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from keydeck import __version__
-from keydeck.config import BUTTON_SIZE_MAP, AppSettings, DeckPage
+from keydeck.config import (
+    BUTTON_SIZE_MAP,
+    AppSettings,
+    DeckPage,
+    normalize_unique_plugin_assignments,
+)
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo
 from keydeck.plugin_store import PluginStore
@@ -498,6 +504,8 @@ class PreviewDeckButtonWidget(QWidget):
         
         # dynamic title if available
         title = action.title
+        if action.action_title_callback:
+            title = action.action_title_callback(self.slot_index, settings or {})
         if settings and "account_name" in settings:
             title = settings["account_name"]
         if overrides and overrides.get("title"):
@@ -1112,6 +1120,13 @@ class SettingsDialog(QDialog):
         details_layout.setContentsMargins(20, 20, 20, 18)
         details_layout.setSpacing(8)
 
+        self.plugin_detail_tabs = QTabWidget(details_card)
+        self.plugin_detail_tabs.setObjectName("PluginSettingsTabs")
+        plugin_tab = QWidget(self.plugin_detail_tabs)
+        plugin_tab_layout = QVBoxLayout(plugin_tab)
+        plugin_tab_layout.setContentsMargins(12, 14, 12, 12)
+        plugin_tab_layout.setSpacing(8)
+
         self.plugin_name_label = QLabel("Select a plugin", details_card)
         self.plugin_name_label.setObjectName("PageTitle")
         self.plugin_id_label = QLabel("", details_card)
@@ -1128,19 +1143,19 @@ class SettingsDialog(QDialog):
         self.plugin_summary_label.setWordWrap(True)
         self.plugin_actions_label = QLabel("", details_card)
         self.plugin_actions_label.setObjectName("Muted")
-        details_layout.addWidget(self.plugin_name_label)
-        details_layout.addWidget(self.plugin_id_label)
-        details_layout.addWidget(self.plugin_status_label, 0, Qt.AlignLeft)
-        details_layout.addWidget(self.plugin_enabled_toggle)
-        details_layout.addSpacing(8)
-        details_layout.addWidget(self.plugin_summary_label)
-        details_layout.addWidget(self.plugin_actions_label)
+        plugin_tab_layout.addWidget(self.plugin_name_label)
+        plugin_tab_layout.addWidget(self.plugin_id_label)
+        plugin_tab_layout.addWidget(self.plugin_status_label, 0, Qt.AlignLeft)
+        plugin_tab_layout.addWidget(self.plugin_enabled_toggle)
+        plugin_tab_layout.addSpacing(8)
+        plugin_tab_layout.addWidget(self.plugin_summary_label)
+        plugin_tab_layout.addWidget(self.plugin_actions_label)
 
         self.configure_plugin_btn = QPushButton("Open plugin settings", details_card)
         self.configure_plugin_btn.setObjectName("PrimaryButton")
         self.configure_plugin_btn.clicked.connect(self._configure_selected_plugin)
-        details_layout.addWidget(self.configure_plugin_btn, 0, Qt.AlignLeft)
-        details_layout.addStretch(1)
+        plugin_tab_layout.addWidget(self.configure_plugin_btn, 0, Qt.AlignLeft)
+        plugin_tab_layout.addStretch(1)
 
         self.plugin_error_card = QFrame(details_card)
         self.plugin_error_card.setObjectName("ErrorCard")
@@ -1154,7 +1169,90 @@ class SettingsDialog(QDialog):
         self.plugin_error_list.setObjectName("ErrorList")
         self.plugin_error_list.setMaximumHeight(132)
         error_layout.addWidget(self.plugin_error_list)
-        details_layout.addWidget(self.plugin_error_card)
+        plugin_tab_layout.addWidget(self.plugin_error_card)
+        self.plugin_detail_tabs.addTab(plugin_tab, "Plugin")
+
+        button_tab = QWidget(self.plugin_detail_tabs)
+        button_layout = QVBoxLayout(button_tab)
+        button_layout.setContentsMargins(12, 14, 12, 12)
+        button_layout.setSpacing(10)
+        button_layout.addWidget(QLabel("Assigned button", button_tab))
+        self.plugin_button_combo = QComboBox(button_tab)
+        self.plugin_button_combo.setObjectName("PluginButtonSelection")
+        self.plugin_button_combo.currentIndexChanged.connect(
+            self._update_plugin_button_controls
+        )
+        button_layout.addWidget(self.plugin_button_combo)
+        self.configure_assigned_button_btn = QPushButton(
+            "Configure button action", button_tab
+        )
+        self.configure_assigned_button_btn.setObjectName("PrimaryButton")
+        self.configure_assigned_button_btn.clicked.connect(
+            self._configure_selected_assigned_button
+        )
+        button_layout.addWidget(self.configure_assigned_button_btn, 0, Qt.AlignLeft)
+        button_layout.addWidget(
+            QLabel(
+                "Choose a button to edit its plugin-specific action settings.",
+                button_tab,
+            )
+        )
+        button_layout.addStretch(1)
+        self.plugin_detail_tabs.addTab(button_tab, "Button")
+
+        appearance_tab = QWidget(self.plugin_detail_tabs)
+        appearance_layout = QVBoxLayout(appearance_tab)
+        appearance_layout.setContentsMargins(12, 14, 12, 12)
+        appearance_layout.setSpacing(10)
+        appearance_layout.addWidget(QLabel("Button appearance", appearance_tab))
+        self.appearance_title_edit = QLineEdit(appearance_tab)
+        self.appearance_title_edit.setPlaceholderText("Use the plugin's default title")
+        appearance_layout.addWidget(self.appearance_title_edit)
+        icon_row = QWidget(appearance_tab)
+        icon_layout = QHBoxLayout(icon_row)
+        icon_layout.setContentsMargins(0, 0, 0, 0)
+        self.appearance_icon_edit = QLineEdit(icon_row)
+        self.appearance_icon_edit.setReadOnly(True)
+        self.appearance_icon_edit.setPlaceholderText("Use the plugin's default icon")
+        icon_layout.addWidget(self.appearance_icon_edit, 1)
+        self.appearance_browse_btn = QPushButton("Browse…", icon_row)
+        self.appearance_browse_btn.clicked.connect(self._browse_plugin_button_icon)
+        icon_layout.addWidget(self.appearance_browse_btn)
+        self.appearance_clear_icon_btn = QPushButton("Clear", icon_row)
+        self.appearance_clear_icon_btn.clicked.connect(self.appearance_icon_edit.clear)
+        icon_layout.addWidget(self.appearance_clear_icon_btn)
+        appearance_layout.addWidget(icon_row)
+        self.appearance_image_mode_combo = QComboBox(appearance_tab)
+        self.appearance_image_mode_combo.addItem("Fill (stretch)", "fill")
+        self.appearance_image_mode_combo.addItem("Fit (show whole image)", "fit")
+        self.appearance_image_mode_combo.addItem(
+            "Crop (fill without distortion)", "crop"
+        )
+        appearance_layout.addWidget(self.appearance_image_mode_combo)
+        image_controls = QHBoxLayout()
+        self.appearance_image_zoom_spin = QDoubleSpinBox(appearance_tab)
+        self.appearance_image_zoom_spin.setRange(0.2, 3.0)
+        self.appearance_image_zoom_spin.setSingleStep(0.05)
+        self.appearance_image_zoom_spin.setDecimals(2)
+        self.appearance_image_zoom_spin.setSuffix("×")
+        image_controls.addWidget(QLabel("Zoom", appearance_tab))
+        image_controls.addWidget(self.appearance_image_zoom_spin)
+        self.appearance_image_offset_x_spin = QSpinBox(appearance_tab)
+        self.appearance_image_offset_x_spin.setRange(-500, 500)
+        image_controls.addWidget(QLabel("X", appearance_tab))
+        image_controls.addWidget(self.appearance_image_offset_x_spin)
+        self.appearance_image_offset_y_spin = QSpinBox(appearance_tab)
+        self.appearance_image_offset_y_spin.setRange(-500, 500)
+        image_controls.addWidget(QLabel("Y", appearance_tab))
+        image_controls.addWidget(self.appearance_image_offset_y_spin)
+        appearance_layout.addLayout(image_controls)
+        self.apply_appearance_btn = QPushButton("Apply appearance", appearance_tab)
+        self.apply_appearance_btn.setObjectName("PrimaryButton")
+        self.apply_appearance_btn.clicked.connect(self._apply_plugin_button_appearance)
+        appearance_layout.addWidget(self.apply_appearance_btn, 0, Qt.AlignLeft)
+        appearance_layout.addStretch(1)
+        self.plugin_detail_tabs.addTab(appearance_tab, "Button Appearance")
+        details_layout.addWidget(self.plugin_detail_tabs, 1)
         content.addWidget(details_card, 2)
 
         layout.addLayout(content, 1)
@@ -1288,6 +1386,7 @@ class SettingsDialog(QDialog):
             self.plugin_actions_label.clear()
             self.configure_plugin_btn.setEnabled(False)
             self.plugin_enabled_toggle.setEnabled(False)
+            self._populate_plugin_button_combo(None)
             return
 
         plugin_info = self.available_plugins[row]
@@ -1359,6 +1458,145 @@ class SettingsDialog(QDialog):
         self.plugin_enabled_toggle.blockSignals(False)
         self.plugin_enabled_toggle.setEnabled(True)
         self.configure_plugin_btn.setEnabled(not disabled and has_settings)
+        self._populate_plugin_button_combo(plugin_id)
+
+    def _populate_plugin_button_combo(self, plugin_id: str | None) -> None:
+        self.plugin_button_combo.blockSignals(True)
+        self.plugin_button_combo.clear()
+        if plugin_id:
+            for page_index, page in enumerate(self._pages):
+                for slot, assigned_id in enumerate(page.slot_actions):
+                    action = self._action_by_id.get(assigned_id) if assigned_id else None
+                    if action is None or action.plugin_id != plugin_id:
+                        continue
+                    self.plugin_button_combo.addItem(
+                        f"{page.name} · Button {slot + 1} · {action.title}",
+                        (page_index, slot, action.action_id),
+                    )
+        self.plugin_button_combo.blockSignals(False)
+        self._update_plugin_button_controls()
+
+    def _selected_plugin_button(self) -> tuple[int, int, Action] | None:
+        value = self.plugin_button_combo.currentData()
+        if not isinstance(value, tuple) or len(value) != 3:
+            return None
+        page_index, slot, action_id = value
+        if not isinstance(page_index, int) or not isinstance(slot, int):
+            return None
+        if not 0 <= page_index < len(self._pages):
+            return None
+        action = self._action_by_id.get(action_id)
+        if action is None:
+            return None
+        return page_index, slot, action
+
+    def _update_plugin_button_controls(self, *_args) -> None:
+        selected = self._selected_plugin_button()
+        has_action_settings = bool(
+            selected and selected[2].action_settings_callback is not None
+        )
+        enabled = selected is not None
+        self.configure_assigned_button_btn.setEnabled(
+            enabled and has_action_settings
+        )
+        for widget in (
+            self.appearance_title_edit,
+            self.appearance_icon_edit,
+            self.appearance_browse_btn,
+            self.appearance_clear_icon_btn,
+            self.appearance_image_mode_combo,
+            self.appearance_image_zoom_spin,
+            self.appearance_image_offset_x_spin,
+            self.appearance_image_offset_y_spin,
+            self.apply_appearance_btn,
+        ):
+            widget.setEnabled(enabled)
+        if selected is None:
+            self.appearance_title_edit.clear()
+            self.appearance_icon_edit.clear()
+            return
+        page_index, slot, action = selected
+        page = self._pages[page_index]
+        overrides = page.slot_overrides.get(str(slot), {})
+        self.appearance_title_edit.setText(str(overrides.get("title", "")))
+        self.appearance_icon_edit.setText(str(overrides.get("icon_path", "")))
+        self.appearance_image_mode_combo.setCurrentIndex(
+            max(
+                0,
+                self.appearance_image_mode_combo.findData(
+                    overrides.get("image_mode", "crop")
+                ),
+            )
+        )
+        self.appearance_image_zoom_spin.setValue(
+            float(overrides.get("image_zoom", 1.0))
+        )
+        self.appearance_image_offset_x_spin.setValue(
+            int(overrides.get("image_offset_x", 0))
+        )
+        self.appearance_image_offset_y_spin.setValue(
+            int(overrides.get("image_offset_y", 0))
+        )
+
+    def _configure_selected_assigned_button(self) -> None:
+        selected = self._selected_plugin_button()
+        if selected is None:
+            return
+        page_index, slot, action = selected
+        if action.action_settings_callback is None:
+            return
+        page = self._pages[page_index]
+        slot_key = str(slot)
+        new_settings = action.action_settings_callback(
+            slot,
+            page.slot_settings.get(slot_key, {}),
+        )
+        if new_settings is None:
+            return
+        page.slot_settings[slot_key] = new_settings
+        if page_index == self._selected_page_index:
+            self._refresh_slot(slot)
+            self._schedule_preview_rebuild()
+
+    def _browse_plugin_button_icon(self) -> None:
+        selected = self._selected_plugin_button()
+        if selected is None:
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose button icon",
+            self.appearance_icon_edit.text(),
+            "Images (*.png *.jpg *.jpeg *.bmp *.svg);;All files (*)",
+        )
+        if path:
+            self.appearance_icon_edit.setText(str(Path(path).resolve()))
+
+    def _apply_plugin_button_appearance(self) -> None:
+        selected = self._selected_plugin_button()
+        if selected is None:
+            return
+        page_index, slot, _action = selected
+        overrides = dict(self._pages[page_index].slot_overrides.get(str(slot), {}))
+        title = self.appearance_title_edit.text().strip()
+        icon_path = self.appearance_icon_edit.text().strip()
+        if title:
+            overrides["title"] = title
+        else:
+            overrides.pop("title", None)
+        if icon_path:
+            overrides["icon_path"] = icon_path
+        else:
+            overrides.pop("icon_path", None)
+        overrides["image_mode"] = self.appearance_image_mode_combo.currentData()
+        overrides["image_zoom"] = self.appearance_image_zoom_spin.value()
+        overrides["image_offset_x"] = self.appearance_image_offset_x_spin.value()
+        overrides["image_offset_y"] = self.appearance_image_offset_y_spin.value()
+        if overrides:
+            self._pages[page_index].slot_overrides[str(slot)] = overrides
+        else:
+            self._pages[page_index].slot_overrides.pop(str(slot), None)
+        if page_index == self._selected_page_index:
+            self._refresh_slot(slot)
 
     def _configure_selected_plugin(self) -> None:
         row = self.plugin_list.currentRow()
@@ -1909,7 +2147,7 @@ class SettingsDialog(QDialog):
         dialog = ActionPickerDialog(
             slot_number=slot + 1,
             current_action_id=current_action_id,
-            actions=self.actions,
+            actions=self._available_actions_for_slot(slot),
             parent=self,
         )
         if dialog.exec():
@@ -1917,52 +2155,36 @@ class SettingsDialog(QDialog):
             if selected_action_id != current_action_id:
                 self._slot_overrides.pop(str(slot), None)
             self._slot_actions[slot] = selected_action_id
+            self._normalize_slot_actions()
             self._refresh_slot(slot)
 
     def _open_button_appearance(self, slot: int) -> None:
         action = self._action_for_slot(slot)
         if action is None:
             return
-
-        slot_key = str(slot)
-        overrides = dict(self._slot_overrides.get(slot_key, {}))
-        current_settings = self._slot_settings.get(slot_key, {})
-        current_title = overrides.get(
-            "title",
-            str(current_settings.get("account_name", action.title)),
+        plugin_row = next(
+            (
+                index
+                for index, plugin_info in enumerate(self.available_plugins)
+                if plugin_info.plugin_id == action.plugin_id
+            ),
+            -1,
         )
-        dialog = ButtonAppearanceDialog(
-            current_title,
-            overrides.get("icon_path", ""),
-            image_mode=overrides.get("image_mode", "crop"),
-            image_zoom=overrides.get("image_zoom", 1.0),
-            image_offset_x=overrides.get("image_offset_x", 0),
-            image_offset_y=overrides.get("image_offset_y", 0),
-            parent=self,
-        )
-        if not dialog.exec():
+        if plugin_row < 0:
             return
-
-        title = dialog.title_edit.text().strip()
-        icon_path = dialog.icon_edit.text().strip()
-        if title:
-            overrides["title"] = title
-        else:
-            overrides.pop("title", None)
-        if icon_path:
-            overrides["icon_path"] = icon_path
-        else:
-            overrides.pop("icon_path", None)
-        overrides["image_mode"] = dialog.image_mode_combo.currentData()
-        overrides["image_zoom"] = dialog.image_zoom_spin.value()
-        overrides["image_offset_x"] = dialog.image_offset_x_spin.value()
-        overrides["image_offset_y"] = dialog.image_offset_y_spin.value()
-
-        if overrides:
-            self._slot_overrides[slot_key] = overrides
-        else:
-            self._slot_overrides.pop(slot_key, None)
-        self._refresh_slot(slot)
+        self.sidebar.setCurrentRow(1)
+        self.plugin_list.setCurrentRow(plugin_row)
+        for index in range(self.plugin_button_combo.count()):
+            assignment = self.plugin_button_combo.itemData(index)
+            if (
+                isinstance(assignment, tuple)
+                and len(assignment) == 3
+                and assignment[0] == self._selected_page_index
+                and assignment[1] == slot
+            ):
+                self.plugin_button_combo.setCurrentIndex(index)
+                break
+        self.plugin_detail_tabs.setCurrentIndex(2)
 
     def _assign_hotkey(self, slot: int) -> None:
         from PySide6.QtWidgets import QInputDialog
@@ -2044,22 +2266,48 @@ class SettingsDialog(QDialog):
             for plugin_id in self._preserved_plugin_ids
         )
         aliases: dict[str, str] = {}
+        alias_settings_defaults: dict[str, dict] = {}
         for action in self.actions:
             for alias in action.aliases:
                 aliases[str(alias)] = action.action_id
+            alias_settings_defaults.update(action.alias_settings_defaults)
 
         for page in self._pages:
             normalized: list[str | None] = []
-            for action_id in page.slot_actions:
-                if (
-                    not action_id
-                    or action_id in valid_action_ids
-                    or action_id.startswith(preserved_prefixes)
-                ):
+            for slot, action_id in enumerate(page.slot_actions):
+                if not action_id or action_id in valid_action_ids:
+                    normalized.append(action_id)
+                    continue
+                replacement = aliases.get(action_id)
+                if replacement:
+                    normalized.append(replacement)
+                    defaults = alias_settings_defaults.get(action_id)
+                    if defaults:
+                        migrated = dict(defaults)
+                        migrated.update(page.slot_settings.get(str(slot), {}))
+                        page.slot_settings[str(slot)] = migrated
+                elif action_id.startswith(preserved_prefixes):
                     normalized.append(action_id)
                 else:
-                    normalized.append(aliases.get(action_id))
+                    normalized.append(None)
             page.slot_actions = normalized
+        normalize_unique_plugin_assignments(self._pages)
+
+    def _available_actions_for_slot(self, slot: int) -> list[Action]:
+        used_plugins = {
+            action.plugin_id
+            for page in self._pages
+            for other_slot, action_id in enumerate(page.slot_actions)
+            if (page is not self._current_page or other_slot != slot)
+            and action_id
+            and (action := self._action_by_id.get(action_id)) is not None
+            and action.plugin_id != "core"
+        }
+        return [
+            action
+            for action in self.actions
+            if action.plugin_id == "core" or action.plugin_id not in used_plugins
+        ]
 
     def _project_root(self) -> Path:
         return Path(__file__).resolve().parents[2]

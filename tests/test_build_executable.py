@@ -18,7 +18,7 @@ class BuildExecutableTests(unittest.TestCase):
         )
         self.assertFalse(
             is_build_source_file(
-                Path("plugins") / "ShortcutLauncher" / "manifest.json"
+                Path("plugins") / "MultiTool" / "manifest.json"
             )
         )
 

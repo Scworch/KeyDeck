@@ -18,10 +18,10 @@ from keydeck.config import AppSettings, DeckPage
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo
 from keydeck.ui.controls import ToggleSwitch
+from keydeck.ui.deck_button import DeckButtonWidget
 from keydeck.ui.deck_window import DeckWindow
 from keydeck.ui.settings_dialog import (
     ActionPickerDialog,
-    ButtonAppearanceDialog,
     SettingsDialog,
 )
 from keydeck.ui.theme import apply_dark_theme
@@ -173,10 +173,20 @@ class SettingsDialogTests(unittest.TestCase):
     def test_deck_keys_keep_their_configured_size_with_global_theme(self) -> None:
         previous_stylesheet = self.app.styleSheet()
         apply_dark_theme(self.app)
+        action = Action(
+            action_id="sample.run",
+            title="Sample",
+            callback=lambda: None,
+            plugin_id="sample",
+        )
         try:
             for button_size in ("small", "medium", "large"):
                 with self.subTest(button_size=button_size):
-                    deck = DeckWindow(AppSettings(button_size=button_size), [])
+                    settings = AppSettings(
+                        button_size=button_size,
+                        pages=[DeckPage(slot_actions=["sample.run"])],
+                    )
+                    deck = DeckWindow(settings, [action])
                     deck.show()
                     self.app.processEvents()
                     try:
@@ -189,6 +199,119 @@ class SettingsDialogTests(unittest.TestCase):
                         deck.close()
         finally:
             self.app.setStyleSheet(previous_stylesheet)
+
+    def test_deck_hides_unassigned_buttons_and_is_not_always_on_top(self) -> None:
+        deck = DeckWindow(
+            AppSettings(
+                rows=1,
+                columns=4,
+                pages=[DeckPage(rows=1, columns=4, slot_actions=["sample.run", None, None, None])],
+            ),
+            [
+                Action(
+                    action_id="sample.run",
+                    title="Sample",
+                    callback=lambda: None,
+                    plugin_id="sample",
+                )
+            ],
+        )
+        try:
+            visible_buttons = deck.grid_widget.findChildren(DeckButtonWidget)
+
+            self.assertEqual(len(visible_buttons), 1)
+            self.assertFalse(deck.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
+            self.assertEqual(deck.grid_layout.count(), 1)
+        finally:
+            deck.close()
+
+    def test_plugin_assignment_is_unique_across_pages(self) -> None:
+        settings = AppSettings.from_dict(
+            {
+                "pages": [
+                    {
+                        "name": "First",
+                        "rows": 1,
+                        "columns": 1,
+                        "slot_actions": ["SteamLauncher.launch"],
+                        "slot_settings": {"0": {"profile": "primary"}},
+                    },
+                    {
+                        "name": "Second",
+                        "rows": 1,
+                        "columns": 1,
+                        "slot_actions": ["SteamLauncher.launch"],
+                        "slot_settings": {"0": {"profile": "secondary"}},
+                        "slot_overrides": {"0": {"title": "Duplicate"}},
+                    },
+                ]
+            }
+        )
+
+        self.assertEqual(settings.pages[0].slot_actions[0], "SteamLauncher.launch")
+        self.assertIsNone(settings.pages[1].slot_actions[0])
+        self.assertEqual(settings.pages[0].slot_settings["0"]["profile"], "primary")
+        self.assertNotIn("0", settings.pages[1].slot_settings)
+        self.assertNotIn("0", settings.pages[1].slot_overrides)
+
+    def test_legacy_discord_action_migrates_its_mode_into_button_settings(self) -> None:
+        settings = AppSettings(
+            pages=[
+                DeckPage(
+                    slot_actions=["DiscordConnect.mute"],
+                    slot_settings={"0": {"custom": "kept"}},
+                )
+            ]
+        )
+
+        changed = settings.normalize_action_ids(
+            {"DiscordConnect.control"},
+            aliases={"DiscordConnect.mute": "DiscordConnect.control"},
+            alias_settings_defaults={
+                "DiscordConnect.mute": {"mode": "mute"}
+            },
+        )
+
+        self.assertTrue(changed)
+        self.assertEqual(
+            settings.pages[0].slot_actions[0],
+            "DiscordConnect.control",
+        )
+        self.assertEqual(
+            settings.pages[0].slot_settings["0"],
+            {"mode": "mute", "custom": "kept"},
+        )
+
+    def test_plugin_settings_have_plugin_button_and_appearance_tabs(self) -> None:
+        action = Action(
+            action_id="sample.run",
+            title="Sample",
+            callback=lambda: None,
+            plugin_id="sample",
+            action_settings_callback=lambda _slot, settings: settings,
+        )
+        settings = AppSettings(
+            pages=[DeckPage(slot_actions=["sample.run"])],
+        )
+        dialog = SettingsDialog(settings, [action], plugins=[SamplePlugin()])
+        try:
+            self.assertEqual(
+                [
+                    dialog.plugin_detail_tabs.tabText(index)
+                    for index in range(dialog.plugin_detail_tabs.count())
+                ],
+                ["Plugin", "Button", "Button Appearance"],
+            )
+            dialog._open_button_appearance(0)
+            dialog.appearance_title_edit.setText("Custom label")
+            dialog._apply_plugin_button_appearance()
+
+            self.assertEqual(
+                dialog.to_settings().pages[0].slot_overrides["0"]["title"],
+                "Custom label",
+            )
+        finally:
+            dialog.close()
 
     def test_settings_dialog_keeps_theme_when_parented_to_deck(self) -> None:
         previous_stylesheet = self.app.styleSheet()
@@ -274,25 +397,16 @@ class SettingsDialogTests(unittest.TestCase):
             deck = None
             try:
                 QTest.qWait(10)
-
-                def set_appearance() -> None:
-                    appearance_dialog = next(
-                        widget
-                        for widget in self.app.topLevelWidgets()
-                        if isinstance(widget, ButtonAppearanceDialog)
-                    )
-                    appearance_dialog.title_edit.setText("Run")
-                    appearance_dialog.icon_edit.setText(str(icon_path))
-                    appearance_dialog.image_mode_combo.setCurrentIndex(
-                        appearance_dialog.image_mode_combo.findData("fit")
-                    )
-                    appearance_dialog.image_zoom_spin.setValue(1.35)
-                    appearance_dialog.image_offset_x_spin.setValue(7)
-                    appearance_dialog.image_offset_y_spin.setValue(-5)
-                    appearance_dialog.accept()
-
-                QTimer.singleShot(0, set_appearance)
                 dialog._open_button_appearance(0)
+                dialog.appearance_title_edit.setText("Run")
+                dialog.appearance_icon_edit.setText(str(icon_path))
+                dialog.appearance_image_mode_combo.setCurrentIndex(
+                    dialog.appearance_image_mode_combo.findData("fit")
+                )
+                dialog.appearance_image_zoom_spin.setValue(1.35)
+                dialog.appearance_image_offset_x_spin.setValue(7)
+                dialog.appearance_image_offset_y_spin.setValue(-5)
+                dialog._apply_plugin_button_appearance()
 
                 preview = dialog._button_widgets[0]
                 self.assertEqual(preview.title.text(), "Run")

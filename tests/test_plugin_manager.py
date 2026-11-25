@@ -98,6 +98,35 @@ class Plugin(PluginBase):
             self.assertEqual(manager.all_actions()[0].title, "Source")
             manager.unload_plugins()
 
+    def test_retired_plugin_is_not_discovered_or_imported(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            plugin_dir = root / "plugins" / "ShortcutLauncher"
+            plugin_dir.mkdir(parents=True)
+            imported = root / "imported"
+            (plugin_dir / "manifest.json").write_text(
+                json.dumps(
+                    {"id": "ShortcutLauncher", "name": "Shortcut Launcher"}
+                ),
+                encoding="utf-8",
+            )
+            (plugin_dir / "plugin.py").write_text(
+                f"from pathlib import Path\nPath({str(imported)!r}).touch()\n",
+                encoding="utf-8",
+            )
+            manager = PluginManager(
+                root / "plugins",
+                data_dir=root / "data",
+                retired_plugin_ids={"ShortcutLauncher"},
+            )
+
+            self.assertEqual(manager.discover_plugins(), [])
+            manager.load_plugins()
+
+            self.assertEqual(manager.all_actions(), [])
+            self.assertFalse(imported.exists())
+            manager.unload_plugins()
+
     def test_action_can_disable_generic_json_settings_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             plugin_dir = Path(temp_dir) / "plugins" / "button_only"

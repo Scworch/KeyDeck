@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtCore import QEventLoop, Qt, QTimer
+from PySide6.QtWidgets import QApplication, QLabel, QInputDialog
 
 from keydeck.plugin_api import PluginContext
 from plugins.MultiTool.plugin import Plugin, SequenceEditorDialog, SequenceStepCard
@@ -20,7 +21,7 @@ class MultiToolTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    def _plugin(self, invoke_slot=None) -> Plugin:
+    def _plugin(self, invoke_slot=None, invoke_action=None) -> Plugin:
         context = PluginContext(
             plugin_id="MultiTool",
             plugin_name="MultiTool",
@@ -29,6 +30,7 @@ class MultiToolTests(unittest.TestCase):
             settings_file=Path("settings.json"),
             manifest={},
             invoke_assigned_slot=invoke_slot,
+            invoke_plugin_action=invoke_action,
         )
         return Plugin(context)
 
@@ -74,6 +76,78 @@ class MultiToolTests(unittest.TestCase):
         )
 
         self.assertEqual(invoked, [("page-id", 3)])
+
+    def test_sequence_invokes_any_plugin_action_with_its_own_settings(self) -> None:
+        invoked: list[tuple[str, dict]] = []
+        plugin = self._plugin(
+            invoke_action=lambda action_id, settings: invoked.append(
+                (action_id, settings)
+            )
+        )
+
+        plugin._execute_step(
+            {
+                "type": "plugin_action",
+                "action_id": "SteamLauncher.launch",
+                "settings": {"profile_id": "work"},
+            }
+        )
+
+        self.assertEqual(
+            invoked,
+            [("SteamLauncher.launch", {"profile_id": "work"})],
+        )
+
+    def test_sequence_waits_between_actions_without_blocking(self) -> None:
+        plugin = self._plugin()
+        calls: list[float] = []
+        started = time.monotonic()
+        loop = QEventLoop()
+
+        with patch(
+            "plugins.MultiTool.plugin.webbrowser.open",
+            side_effect=lambda _url: calls.append(time.monotonic()) or True,
+        ):
+            plugin._run_sequence(
+                {
+                    "steps": [
+                        {"type": "url", "value": "https://first.example"},
+                        {"type": "delay", "milliseconds": 30},
+                        {"type": "url", "value": "https://second.example"},
+                    ]
+                }
+            )
+
+            def finish_when_done() -> None:
+                if plugin._sequence_running:
+                    QTimer.singleShot(5, finish_when_done)
+                else:
+                    loop.quit()
+
+            QTimer.singleShot(5, finish_when_done)
+            QTimer.singleShot(1000, loop.quit)
+            loop.exec()
+
+        self.assertEqual(len(calls), 2)
+        self.assertGreaterEqual(calls[1] - calls[0], 0.02)
+        self.assertGreaterEqual(calls[0], started)
+
+    def test_invalid_saved_delay_uses_safe_editor_default(self) -> None:
+        dialog = SequenceEditorDialog([], [])
+        try:
+            with patch.object(QInputDialog, "getInt", return_value=(200, True)) as get_int:
+                dialog._add_step("delay", {"milliseconds": "invalid"})
+
+            self.assertEqual(
+                get_int.call_args.args[3],
+                1000,
+            )
+            self.assertEqual(
+                dialog.result_steps(),
+                [{"type": "delay", "milliseconds": 200, "enabled": True}],
+            )
+        finally:
+            dialog.close()
 
     def test_run_command_is_passed_as_data_not_shell_source(self) -> None:
         plugin = self._plugin()

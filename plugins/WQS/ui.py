@@ -41,7 +41,7 @@ QLabel#widget { background:#1b2330; border-radius:12px; padding:10px; }
 class DesktopOverlay(QWidget):
     def __init__(self, screen: Any, emergency: Callable[[], None]) -> None:
         super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setStyleSheet("background:#080b10;")
         self.setGeometry(screen.geometry())
@@ -53,7 +53,7 @@ class Launcher(QDialog):
         super().__init__(parent)
         self.plugin = plugin
         self.overlays: list[DesktopOverlay] = []
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
         self.setStyleSheet(STYLE)
         self.setMinimumSize(980, 650)
         self._build()

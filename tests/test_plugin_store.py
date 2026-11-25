@@ -93,9 +93,47 @@ class PluginStoreTests(unittest.TestCase):
         catalog = Path(__file__).resolve().parents[1] / "plugins" / "catalog.json"
 
         entries = parse_catalog(catalog.read_bytes())
+        data = json.loads(catalog.read_text(encoding="utf-8"))
 
         self.assertIn("MultiTool", {entry.plugin_id for entry in entries})
+        self.assertNotIn("ShortcutLauncher", {entry.plugin_id for entry in entries})
+        self.assertIn("ShortcutLauncher", data["retired_plugins"])
         self.assertTrue(all(entry.release_tag.startswith("plugin-") for entry in entries))
+
+    def test_retired_plugin_uninstall_does_not_remove_user_data(self) -> None:
+        plugin_id = "ShortcutLauncher"
+        active = self.store.installed_plugins_dir / plugin_id
+        backup = self.store.backup_dir / plugin_id
+        user_data = Path(self.temporary.name) / "plugin_data" / plugin_id
+        for folder in (active, backup, user_data):
+            folder.mkdir(parents=True)
+        (active / "manifest.json").write_text(
+            json.dumps({"id": plugin_id, "version": "0.1.0"}),
+            encoding="utf-8",
+        )
+        (backup / "manifest.json").write_text(
+            json.dumps({"id": plugin_id, "version": "0.0.9"}),
+            encoding="utf-8",
+        )
+        (user_data / "settings.json").write_text("{}", encoding="utf-8")
+
+        self.store.uninstall(plugin_id)
+
+        self.assertFalse(active.exists())
+        self.assertFalse(backup.exists())
+        self.assertTrue((user_data / "settings.json").is_file())
+
+    def test_retired_plugin_cleanup_removes_backup_even_without_active_code(self) -> None:
+        backup = self.store.backup_dir / "ShortcutLauncher"
+        backup.mkdir(parents=True)
+        (backup / "manifest.json").write_text(
+            json.dumps({"id": "ShortcutLauncher", "version": "0.0.9"}),
+            encoding="utf-8",
+        )
+
+        self.store.uninstall("ShortcutLauncher", allow_missing=True)
+
+        self.assertFalse(backup.exists())
 
     def test_install_checks_consent_hash_and_manifest_before_activation(self) -> None:
         archive = self._archive(self.entry)

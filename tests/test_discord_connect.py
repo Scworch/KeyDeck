@@ -51,26 +51,34 @@ class DiscordConnectTests(unittest.TestCase):
             actions = {action.action_id: action for action in plugin.actions()}
 
             self.assertEqual(
-                actions["DiscordConnect.mute"].action_title_callback(0, {}),
+                actions["DiscordConnect.control"].action_title_callback(
+                    0, {"mode": "mute"}
+                ),
                 "Unmute",
             )
             self.assertEqual(
-                actions["DiscordConnect.deafen"].action_title_callback(0, {}),
+                actions["DiscordConnect.control"].action_title_callback(
+                    0, {"mode": "deafen"}
+                ),
                 "Deafen",
             )
             settings = AppSettings().clamp()
-            settings.pages[0].slot_actions[0] = "DiscordConnect.mute"
-            deck = DeckWindow(settings, [actions["DiscordConnect.mute"]])
+            settings.pages[0].slot_actions[0] = "DiscordConnect.control"
+            settings.pages[0].slot_settings["0"] = {"mode": "mute"}
+            deck = DeckWindow(settings, [actions["DiscordConnect.control"]])
             button = deck.grid_widget.findChildren(DeckButtonWidget)[0]
             self.assertEqual(button.label.text(), "Unmute")
             mute_icon = Path(
-                actions["DiscordConnect.mute"].action_icon_callback(0, {})
+                actions["DiscordConnect.control"].action_icon_callback(
+                    0, {"mode": "mute"}
+                )
             )
             self.assertIn("#ED4245", mute_icon.read_text(encoding="utf-8"))
             join_icon = Path(
-                actions["DiscordConnect.join"].action_icon_callback(
+                actions["DiscordConnect.control"].action_icon_callback(
                     0,
                     {
+                        "mode": "join",
                         "guild_id": "12345678901234567",
                         "guild_name": "Test server",
                         "channel_id": "12345678901234568",
@@ -113,12 +121,7 @@ class DiscordConnectTests(unittest.TestCase):
             self.assertEqual(manager.errors, [])
             self.assertEqual(
                 [action.action_id for action in manager.all_actions()],
-                [
-                    "DiscordConnect.join",
-                    "DiscordConnect.leave",
-                    "DiscordConnect.mute",
-                    "DiscordConnect.deafen",
-                ],
+                ["DiscordConnect.control"],
             )
             manager.unload_plugins()
 

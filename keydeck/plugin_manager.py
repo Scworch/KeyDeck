@@ -35,6 +35,9 @@ class PluginManager:
         invoke_assigned_slot: Callable[[str, int], None] | None = None,
         additional_plugins_dirs: tuple[Path, ...] = (),
         refresh_actions: Callable[[], None] | None = None,
+        get_plugin_actions: Callable[[], list[Action]] | None = None,
+        invoke_plugin_action: Callable[[str, dict[str, Any]], None] | None = None,
+        retired_plugin_ids: set[str] | None = None,
     ) -> None:
         self.plugins_dir = plugins_dir
         self.plugin_dirs = (plugins_dir, *additional_plugins_dirs)
@@ -49,6 +52,9 @@ class PluginManager:
         self.get_assigned_slots = get_assigned_slots
         self.invoke_assigned_slot = invoke_assigned_slot
         self.refresh_actions = refresh_actions
+        self.get_plugin_actions = get_plugin_actions
+        self.invoke_plugin_action = invoke_plugin_action
+        self.retired_plugin_ids = frozenset(retired_plugin_ids or ())
 
     def discover_plugins(self) -> list[PluginInfo]:
         discovered: list[PluginInfo] = []
@@ -65,7 +71,7 @@ class PluginManager:
                 except (OSError, TypeError, ValueError):
                     continue
                 plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
-                if plugin_id in discovered_ids:
+                if plugin_id in self.retired_plugin_ids or plugin_id in discovered_ids:
                     continue
                 plugin_name = str(manifest.get("name", plugin_dir.name)).strip() or plugin_dir.name
                 discovered.append(PluginInfo(plugin_id, plugin_name))
@@ -96,6 +102,8 @@ class PluginManager:
                     if plugin_id in loaded_plugin_ids:
                         continue
                     loaded_plugin_ids.add(plugin_id)
+                    if plugin_id in self.retired_plugin_ids:
+                        continue
                     if plugin_id in self.disabled_plugin_ids:
                         continue
                     plugin_version = manifest.get("version")
@@ -285,6 +293,8 @@ class PluginManager:
             get_assigned_slots=self.get_assigned_slots,
             invoke_assigned_slot=self.invoke_assigned_slot,
             refresh_actions=self.refresh_actions,
+            get_plugin_actions=self.get_plugin_actions,
+            invoke_plugin_action=self.invoke_plugin_action,
         )
 
     def _load_manifest(self, manifest_path: Path) -> dict:

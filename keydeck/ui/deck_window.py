@@ -67,7 +67,7 @@ class DeckWindow(QWidget):
         if app is not None and not app.windowIcon().isNull():
             self.setWindowIcon(app.windowIcon())
         self.setObjectName("DeckWindow")
-        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_ShowWithoutActivating, False)
 
         self.setStyleSheet(
@@ -290,15 +290,18 @@ class DeckWindow(QWidget):
 
         action_map: dict[int, Action | None] = {}
         total = page.rows * page.columns
-        empty_layout = not any(page.slot_actions[:total])
+        visible_slots: list[tuple[int, Action]] = []
         for index in range(total):
             action = None
             slot_action_id = page.slot_actions[index] if index < len(page.slot_actions) else None
             if slot_action_id:
                 action = self._find_action_by_id(slot_action_id)
-            if action is None and empty_layout and self.actions:
-                action = self.actions[index % len(self.actions)]
+            if action is None:
+                continue
+            visible_slots.append((index, action))
 
+        visible_columns = min(page.columns, len(visible_slots)) if visible_slots else 1
+        for visible_index, (index, action) in enumerate(visible_slots):
             title = action.title if action else f"Button {index + 1}"
             icon_path = action.icon_path if action else None
             slot_settings = page.slot_settings.get(str(index), {})
@@ -351,11 +354,7 @@ class DeckWindow(QWidget):
             button_widget.installEventFilter(self)
             for child in button_widget.findChildren(QWidget):
                 child.installEventFilter(self)
-            grid_layout.addWidget(
-                button_widget,
-                index // page.columns,
-                index % page.columns,
-            )
+            grid_layout.addWidget(button_widget, visible_index // visible_columns, visible_index % visible_columns)
             action_map[index] = action
 
         grid_widget.adjustSize()

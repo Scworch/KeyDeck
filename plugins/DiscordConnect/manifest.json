@@ -1,8 +1,9 @@
 {
   "id": "DiscordConnect",
   "name": "Discord Connect",
-  "version": "0.1.0",
-  "min_keydeck_version": "0.3.2",
+  "version": "0.2.0",
+  "description": "Control Discord Desktop voice channels, mute, and deafen through official local IPC.",
+  "min_keydeck_version": "0.3.3",
   "permissions": ["network", "filesystem"],
   "entry": "plugin.py",
   "settings": "settings.json"

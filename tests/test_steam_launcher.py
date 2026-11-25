@@ -27,15 +27,42 @@ class SteamLauncherTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_action_callback_uses_captured_profile_not_slot_settings(self) -> None:
+    def test_action_callback_uses_the_button_selected_profile(self) -> None:
         plugin = steam_launcher.Plugin()
+        selected = steam_launcher.LaunchProfile("selected", "Selected", "570")
+        plugin._profiles.append(selected)
         with patch.object(plugin, "_resolve_game_icon", return_value=None):
             action = plugin.actions()[0]
 
         with patch.object(plugin, "_launch") as launch:
-            action.callback({"account_name": "not a profile"})
+            action.callback({"profile_id": selected.profile_id})
 
-        launch.assert_called_once_with(plugin._profiles[0])
+        launch.assert_called_once_with(selected)
+
+    def test_profiles_share_one_action_and_old_action_ids_map_to_profile_settings(self) -> None:
+        plugin = steam_launcher.Plugin()
+        with patch.object(plugin, "_resolve_game_icon", return_value=None):
+            actions = plugin.actions()
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_id, "SteamLauncher.launch")
+        self.assertEqual(
+            actions[0].aliases,
+            [
+                f"SteamLauncher.{profile.profile_id}"
+                for profile in plugin._profiles
+                if profile.profile_id != "launch"
+            ],
+        )
+        self.assertEqual(
+            actions[0].alias_settings_defaults,
+            {
+                f"SteamLauncher.{profile.profile_id}": {
+                    "profile_id": profile.profile_id
+                }
+                for profile in plugin._profiles
+            },
+        )
 
     def test_missing_icons_are_resolved_without_blocking_for_network(self) -> None:
         plugin = steam_launcher.Plugin()

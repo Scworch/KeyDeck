@@ -87,11 +87,25 @@ class KeyDeckApplication(QObject):
 
         self.settings: AppSettings = load_settings()
         self._action_invocation_stack: list[tuple[str, int]] = []
+        self._plugin_action_invocation_stack: list[str] = []
         self.plugin_store = PluginStore(
             INSTALLED_PLUGINS_DIR,
             PLUGIN_BACKUP_DIR,
             PLUGINS_DIR / "catalog.json",
         )
+        self._retired_plugin_errors: list[str] = []
+        try:
+            retired_plugin_ids = self.plugin_store.retired_plugin_ids()
+        except (OSError, ValueError) as exc:
+            retired_plugin_ids = set()
+            self._retired_plugin_errors.append(f"Could not read retired plugins: {exc}")
+        for plugin_id in retired_plugin_ids:
+            try:
+                self.plugin_store.uninstall(plugin_id, allow_missing=True)
+            except (OSError, ValueError) as exc:
+                self._retired_plugin_errors.append(
+                    f"Could not remove retired plugin {plugin_id}: {exc}"
+                )
         legacy_plugins_dir = (
             Path(sys.executable).resolve().parent / "plugins"
             if getattr(sys, "frozen", False)
@@ -105,8 +119,12 @@ class KeyDeckApplication(QObject):
             get_assigned_slots=self._assigned_plugin_slots,
             invoke_assigned_slot=self._invoke_assigned_plugin_slot,
             refresh_actions=self.plugin_actions_refresh_requested.emit,
+            get_plugin_actions=self._available_plugin_actions,
+            invoke_plugin_action=self._invoke_plugin_action,
+            retired_plugin_ids=retired_plugin_ids,
         )
         self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
+        self.plugin_manager.errors.extend(self._retired_plugin_errors)
         self.plugin_manager.start_plugins()
         self.qt_app.aboutToQuit.connect(self.plugin_manager.unload_plugins)
         actions = self.plugin_manager.all_actions()
@@ -568,8 +586,19 @@ class KeyDeckApplication(QObject):
         slot: int = -1,
         page_index: int = 0,
         propagate_errors: bool = False,
+        settings_override: dict | None = None,
+        refresh_actions: bool = True,
     ) -> None:
         if action is None:
+            return
+        if action.action_id in self._plugin_action_invocation_stack:
+            if propagate_errors:
+                raise RuntimeError("Multi-tool action loop detected")
+            QMessageBox.warning(
+                self.deck_window,
+                "Action loop",
+                "This action is already running in the current multi-tool sequence.",
+            )
             return
 
         invocation_key: tuple[str, int] | None = None
@@ -586,12 +615,15 @@ class KeyDeckApplication(QObject):
                 return
             self._action_invocation_stack.append(invocation_key)
 
+        self._plugin_action_invocation_stack.append(action.action_id)
         try:
-            # Check if callback expects a slot argument
             import inspect
+
             sig = inspect.signature(action.callback)
             if len(sig.parameters) > 0:
-                if 0 <= page_index < len(self.settings.pages):
+                if settings_override is not None:
+                    settings = settings_override
+                elif 0 <= page_index < len(self.settings.pages):
                     settings = self.settings.pages[page_index].slot_settings.get(str(slot), {})
                 else:
                     settings = {}
@@ -604,12 +636,41 @@ class KeyDeckApplication(QObject):
             QMessageBox.critical(self.deck_window, "Action Failed", str(exc))
             return
         finally:
+            self._plugin_action_invocation_stack.pop()
             if invocation_key is not None:
                 self._action_invocation_stack.pop()
 
-        actions = self.plugin_manager.all_actions()
-        self._normalize_settings_actions(actions, persist=True)
-        self.deck_window.update_actions(actions)
+        if refresh_actions:
+            actions = self.plugin_manager.all_actions()
+            self._normalize_settings_actions(actions, persist=True)
+            self.deck_window.update_actions(actions)
+
+    def _available_plugin_actions(self) -> list[Action]:
+        return [
+            action
+            for action in self.plugin_manager.all_actions()
+            if action.plugin_id != "core"
+        ]
+
+    def _invoke_plugin_action(self, action_id: str, settings: dict) -> None:
+        action = next(
+            (
+                item
+                for item in self.deck_window.actions
+                if item.action_id == action_id
+            ),
+            None,
+        )
+        if action is None or action.plugin_id == "core":
+            raise ValueError(f"Plugin action is unavailable: {action_id}")
+        if action_id in self._plugin_action_invocation_stack:
+            raise RuntimeError("Multi-tool action loop detected")
+        self._run_action(
+            action,
+            propagate_errors=True,
+            settings_override=settings,
+            refresh_actions=False,
+        )
 
     def reload_plugins(self) -> None:
         self._clear_deck_plugin_references()
@@ -737,9 +798,11 @@ class KeyDeckApplication(QObject):
     ) -> None:
         valid_action_ids = {action.action_id for action in actions}
         aliases: dict[str, str] = {}
+        alias_settings_defaults: dict[str, dict] = {}
         for action in actions:
             for alias in action.aliases:
                 aliases[str(alias)] = action.action_id
+            alias_settings_defaults.update(action.alias_settings_defaults)
         preserved_plugin_ids = set(
             disabled_plugin_ids
             if disabled_plugin_ids is not None
@@ -755,6 +818,7 @@ class KeyDeckApplication(QObject):
             valid_action_ids,
             aliases,
             preserved_plugin_ids,
+            alias_settings_defaults,
         ) and persist:
             save_settings(self.settings)
 

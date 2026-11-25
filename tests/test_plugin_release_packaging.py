@@ -12,7 +12,7 @@ class PluginReleasePackagingTests(unittest.TestCase):
     def test_release_archive_contains_plugin_code_without_user_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             archive_path, checksum_path = package_plugin_release(
-                "plugin-MultiTool-v0.1.0",
+                "plugin-MultiTool-v0.2.0",
                 Path(temporary),
             )
 

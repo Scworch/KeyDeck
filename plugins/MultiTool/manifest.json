@@ -1,9 +1,9 @@
 {
   "id": "MultiTool",
   "name": "MultiTool",
-  "version": "0.1.0",
-  "description": "Runs an ordered sequence of applications, URLs, commands, and assigned KeyDeck actions.",
-  "min_keydeck_version": "0.3.0",
+  "version": "0.2.0",
+  "description": "Build ordered sequences of apps, links, commands, plugin actions, and timed pauses.",
+  "min_keydeck_version": "0.3.3",
   "permissions": ["process", "network", "filesystem", "plugin_control"],
   "entry": "plugin.py",
   "settings": "settings.json"

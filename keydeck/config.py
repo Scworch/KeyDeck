@@ -92,6 +92,26 @@ class DeckPage:
         return self
 
 
+def normalize_unique_plugin_assignments(pages: list[DeckPage]) -> bool:
+    seen_plugins: set[str] = set()
+    changed = False
+    for page in pages:
+        for slot, action_id in enumerate(page.slot_actions):
+            if not action_id or "." not in action_id:
+                continue
+            plugin_id = action_id.split(".", 1)[0]
+            if plugin_id == "core":
+                continue
+            if plugin_id in seen_plugins:
+                page.slot_actions[slot] = None
+                page.slot_settings.pop(str(slot), None)
+                page.slot_overrides.pop(str(slot), None)
+                changed = True
+                continue
+            seen_plugins.add(plugin_id)
+    return changed
+
+
 def _normalize_slot_overrides(raw: Any) -> dict[str, dict[str, Any]]:
     if not isinstance(raw, dict):
         return {}
@@ -269,6 +289,7 @@ class AppSettings:
                 )
             ]
         self.pages = [page.clamp() for page in self.pages]
+        normalize_unique_plugin_assignments(self.pages)
         page_ids: set[str] = set()
         for page in self.pages:
             if page.page_id in page_ids:
@@ -290,8 +311,10 @@ class AppSettings:
         valid_action_ids: set[str],
         aliases: dict[str, str] | None = None,
         preserved_plugin_ids: set[str] | None = None,
+        alias_settings_defaults: dict[str, dict[str, Any]] | None = None,
     ) -> bool:
         alias_map = aliases or {}
+        settings_defaults = alias_settings_defaults or {}
         preserved_prefixes = tuple(
             f"{plugin_id}."
             for plugin_id in (preserved_plugin_ids or set())
@@ -299,19 +322,31 @@ class AppSettings:
         changed = False
         for page in self.pages:
             normalized: list[str | None] = []
-            for action_id in page.slot_actions:
+            for slot, action_id in enumerate(page.slot_actions):
                 if (
                     not action_id
                     or action_id in valid_action_ids
-                    or action_id.startswith(preserved_prefixes)
                 ):
                     normalized.append(action_id)
                     continue
-                normalized.append(alias_map.get(action_id))
-                changed = True
+                replacement = alias_map.get(action_id)
+                if replacement:
+                    normalized.append(replacement)
+                    defaults = settings_defaults.get(action_id)
+                    if defaults:
+                        merged_settings = dict(defaults)
+                        merged_settings.update(page.slot_settings.get(str(slot), {}))
+                        page.slot_settings[str(slot)] = merged_settings
+                    changed = True
+                elif action_id.startswith(preserved_prefixes):
+                    normalized.append(action_id)
+                else:
+                    normalized.append(None)
+                    changed = True
             if normalized != page.slot_actions:
                 page.slot_actions = normalized
         self.clamp()
+        changed = normalize_unique_plugin_assignments(self.pages) or changed
         return changed
 
     def resolve_hotkey_key(self, key: str) -> tuple[int, int] | None:

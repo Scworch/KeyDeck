@@ -209,6 +209,24 @@ class PluginStore:
             raise OSError(f"Could not read the bundled plugin catalog: {exc}") from exc
         return parse_catalog(raw)
 
+    def retired_plugin_ids(self) -> set[str]:
+        try:
+            data = json.loads(self.catalog_file.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError, TypeError) as exc:
+            raise ValueError(f"Plugin catalog is not valid JSON: {exc}") from exc
+        if not isinstance(data, dict):
+            raise ValueError("Plugin catalog must be an object")
+        raw_ids = data.get("retired_plugins", [])
+        if not isinstance(raw_ids, list):
+            raise ValueError("Plugin catalog retired_plugins must be a list")
+        retired: set[str] = set()
+        for plugin_id in raw_ids:
+            self._validate_plugin_id(plugin_id)
+            if plugin_id in retired:
+                raise ValueError(f"Plugin catalog repeats retired plugin ID: {plugin_id}")
+            retired.add(plugin_id)
+        return retired
+
     def fetch_catalog(self) -> list[PluginCatalogEntry]:
         try:
             with _open_url(CATALOG_URL) as response:
@@ -293,10 +311,13 @@ class PluginStore:
                 raise
         return entry.version
 
-    def uninstall(self, plugin_id: str) -> None:
+    def uninstall(self, plugin_id: str, *, allow_missing: bool = False) -> None:
         plugin_dir = self._plugin_path(plugin_id)
         if not plugin_dir.exists():
-            raise FileNotFoundError(f"Plugin {plugin_id} is not installed")
+            if not allow_missing:
+                raise FileNotFoundError(f"Plugin {plugin_id} is not installed")
+            self._remove_directory(self.backup_dir / plugin_id)
+            return
         if plugin_dir.is_symlink() or not plugin_dir.is_dir():
             raise ValueError("Plugin install path is not a regular directory")
         manifest_path = plugin_dir / "manifest.json"

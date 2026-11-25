@@ -26,6 +26,7 @@ class Action:
     aliases: list[str] = field(default_factory=list)
     plugin_settings_enabled: bool = True
     action_title_callback: Callable[[int, dict], str] | None = None
+    alias_settings_defaults: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass
@@ -40,6 +41,8 @@ class PluginContext:
     get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None
     invoke_assigned_slot: Callable[[str, int], None] | None = None
     refresh_actions: Callable[[], None] | None = None
+    get_plugin_actions: Callable[[], list[Action]] | None = None
+    invoke_plugin_action: Callable[[str, dict[str, Any]], None] | None = None
 
     def __post_init__(self) -> None:
         if self.data_dir is None:
@@ -78,6 +81,16 @@ class PluginContext:
         if self.invoke_assigned_slot is None:
             raise RuntimeError("Plugin slot invocation is not available")
         self.invoke_assigned_slot(page_id, slot)
+
+    def available_plugin_actions(self) -> list[Action]:
+        if self.get_plugin_actions is None:
+            return []
+        return self.get_plugin_actions()
+
+    def invoke_action(self, action_id: str, settings: dict[str, Any]) -> None:
+        if self.invoke_plugin_action is None:
+            raise RuntimeError("Plugin action invocation is not available")
+        self.invoke_plugin_action(action_id, settings)
 
 
 class PluginBase:

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -161,40 +162,104 @@ class Plugin(PluginBase):
     def actions(self) -> list[Action]:
         return [
             Action(
-                action_id="DiscordConnect.join",
-                title="Join Channel",
-                callback=self._join_channel,
+                action_id="DiscordConnect.control",
+                title="Discord Connect",
+                callback=self._run_control,
                 plugin_id=self.plugin_id,
-                action_settings_callback=self._edit_join_settings,
-                action_icon_callback=self._join_icon,
-                action_title_callback=self._join_title,
+                settings_callback=self.open_settings,
+                action_settings_callback=self._edit_control_settings,
+                action_icon_callback=self._control_icon,
+                action_title_callback=self._control_title,
                 icon_mode="fill",
-            ),
-            Action(
-                action_id="DiscordConnect.leave",
-                title="Leave Channel",
-                callback=self._leave_channel,
-                plugin_id=self.plugin_id,
-                action_settings_callback=self._edit_leave_settings,
-                action_title_callback=self._leave_title,
-            ),
-            Action(
-                action_id="DiscordConnect.mute",
-                title="Toggle Mute",
-                callback=self._toggle_mute,
-                plugin_id=self.plugin_id,
-                action_icon_callback=self._mute_icon,
-                action_title_callback=self._mute_title,
-            ),
-            Action(
-                action_id="DiscordConnect.deafen",
-                title="Toggle Deafen",
-                callback=self._toggle_deafen,
-                plugin_id=self.plugin_id,
-                action_icon_callback=self._deafen_icon,
-                action_title_callback=self._deafen_title,
+                aliases=[
+                    "DiscordConnect.join",
+                    "DiscordConnect.leave",
+                    "DiscordConnect.mute",
+                    "DiscordConnect.deafen",
+                ],
+                alias_settings_defaults={
+                    "DiscordConnect.join": {"mode": "join"},
+                    "DiscordConnect.leave": {"mode": "leave"},
+                    "DiscordConnect.mute": {"mode": "mute"},
+                    "DiscordConnect.deafen": {"mode": "deafen"},
+                },
             ),
         ]
+
+    def _run_control(self, settings: dict | None = None) -> None:
+        values = settings if isinstance(settings, dict) else {}
+        mode = values.get("mode")
+        if mode == "join":
+            self._join_channel(values)
+        elif mode == "leave":
+            self._leave_channel(values)
+        elif mode == "mute":
+            self._toggle_mute(values)
+        elif mode == "deafen":
+            self._toggle_deafen(values)
+        else:
+            self._show_action_error(
+                "Choose a Discord action in this button's settings first."
+            )
+
+    def _control_title(self, slot: int, settings: dict) -> str:
+        mode = settings.get("mode")
+        if mode == "join":
+            return self._join_title(slot, settings)
+        if mode == "leave":
+            return self._leave_title(slot, settings)
+        if mode == "mute":
+            return self._mute_title(slot, settings)
+        if mode == "deafen":
+            return self._deafen_title(slot, settings)
+        return "Choose Discord action"
+
+    def _control_icon(self, slot: int, settings: dict) -> str | None:
+        mode = settings.get("mode")
+        if mode == "join":
+            return self._join_icon(slot, settings)
+        if mode == "mute":
+            return self._mute_icon(slot, settings)
+        if mode == "deafen":
+            return self._deafen_icon(slot, settings)
+        return None
+
+    def _edit_control_settings(self, slot: int, current: dict) -> dict | None:
+        modes = [
+            ("join", "Join voice channel"),
+            ("leave", "Leave voice channel"),
+            ("mute", "Toggle mute"),
+            ("deafen", "Toggle deafen"),
+        ]
+        labels = [label for _mode, label in modes]
+        current_mode = str(current.get("mode", "join"))
+        current_index = next(
+            (index for index, (mode, _label) in enumerate(modes) if mode == current_mode),
+            0,
+        )
+        selected, accepted = QInputDialog.getItem(
+            QApplication.activeWindow(),
+            "Discord button action",
+            "Choose what this button should do:",
+            labels,
+            current_index,
+            False,
+        )
+        if not accepted:
+            return None
+        mode = modes[labels.index(selected)][0]
+        if mode == "join":
+            result = self._edit_join_settings(slot, current)
+            if result is None:
+                return None
+            result["mode"] = mode
+            return result
+        if mode == "leave":
+            result = self._edit_leave_settings(slot, current)
+            if result is None:
+                return None
+            return {**result, "mode": mode}
+        return {"mode": mode}
 
     def open_settings(self) -> None:
         parent = QApplication.activeModalWidget() or QApplication.activeWindow()

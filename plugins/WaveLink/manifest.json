@@ -2,7 +2,7 @@
   "id": "WaveLink",
   "name": "Wave Link",
   "version": "1.0.0",
-  "description": "Controls Wave Link channels, volume, and supported hardware controls.",
+  "description": "Control Wave Link channels, volume, and supported hardware inputs.",
   "min_keydeck_version": "0.3.0",
   "action_prefixes": ["wavelink_control"],
   "permissions": ["network", "system_audio", "system_input", "filesystem"],

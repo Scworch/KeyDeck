@@ -466,25 +466,90 @@ class Plugin(PluginBase):
             self._save_profiles()
 
     def actions(self) -> list[Action]:
-        actions: list[Action] = []
-        for idx, profile in enumerate(self._profiles):
-            title = profile.title.strip() or f"Steam Launch {idx + 1}"
-            icon_path = self._resolve_game_icon(profile.steam_id)
-            actions.append(
-                Action(
-                    action_id=f"{self.plugin_id}.{profile.profile_id}",
-                    title=title,
-                    callback=lambda _settings=None, p=profile: self._launch(p),
-                    plugin_id=self.plugin_id,
-                    settings_callback=self.open_settings,
-                    icon_path=icon_path,
-                    icon_mode="centered",
-                    icon_zoom=profile.icon_zoom,
-                    icon_offset_x=profile.icon_offset_x,
-                    icon_offset_y=profile.icon_offset_y,
-                )
+        aliases = [
+            f"{self.plugin_id}.{profile.profile_id}"
+            for profile in self._profiles
+            if profile.profile_id != "launch"
+        ]
+        return [
+            Action(
+                action_id=f"{self.plugin_id}.launch",
+                title="Steam Launcher",
+                callback=self._launch_selected_profile,
+                plugin_id=self.plugin_id,
+                settings_callback=self.open_settings,
+                action_settings_callback=self._choose_profile,
+                action_title_callback=self._profile_title,
+                action_icon_callback=self._profile_icon,
+                icon_mode="centered",
+                aliases=aliases,
+                alias_settings_defaults={
+                    f"{self.plugin_id}.{profile.profile_id}": {
+                        "profile_id": profile.profile_id,
+                    }
+                    for profile in self._profiles
+                },
             )
-        return actions
+        ]
+
+    def _profile_for_id(self, settings: dict) -> LaunchProfile | None:
+        profile_id = str(settings.get("profile_id", ""))
+        return next(
+            (profile for profile in self._profiles if profile.profile_id == profile_id),
+            None,
+        )
+
+    def _profile_title(self, _slot: int, settings: dict) -> str:
+        profile = self._profile_for_id(settings)
+        return profile.title if profile is not None else "Select Steam game"
+
+    def _profile_icon(self, _slot: int, settings: dict) -> str | None:
+        profile = self._profile_for_id(settings)
+        return self._resolve_game_icon(profile.steam_id) if profile is not None else None
+
+    def _choose_profile(self, _slot: int, settings: dict) -> dict | None:
+        if not self._profiles:
+            QMessageBox.information(
+                QApplication.activeWindow(),
+                "Steam Launcher",
+                "Create a launch profile in Plugin settings first.",
+            )
+            return None
+        labels = [
+            f"{profile.title} [{profile.steam_id}]"
+            for profile in self._profiles
+        ]
+        current_id = str(settings.get("profile_id", ""))
+        current_index = next(
+            (
+                index
+                for index, profile in enumerate(self._profiles)
+                if profile.profile_id == current_id
+            ),
+            0,
+        )
+        from PySide6.QtWidgets import QInputDialog
+
+        selected, accepted = QInputDialog.getItem(
+            QApplication.activeWindow(),
+            "Choose Steam game",
+            "Launch profile:",
+            labels,
+            current_index,
+            False,
+        )
+        if not accepted:
+            return None
+        return {"profile_id": self._profiles[labels.index(selected)].profile_id}
+
+    def _launch_selected_profile(self, settings: dict | None = None) -> None:
+        values = settings if isinstance(settings, dict) else {}
+        profile = self._profile_for_id(values)
+        if profile is None and not values.get("profile_id") and self._profiles:
+            profile = self._profiles[0]
+        if profile is None:
+            raise RuntimeError("Choose a Steam launch profile in Button settings.")
+        self._launch(profile)
 
     def open_settings(self) -> None:
         profiles = [LaunchProfile(**p.to_dict()) for p in self._profiles]
@@ -514,6 +579,8 @@ class Plugin(PluginBase):
 
         self._profiles = updated
         self._save_profiles()
+        if self.context is not None and self.context.refresh_actions is not None:
+            self.context.refresh_actions()
 
     def _launch(self, profile: LaunchProfile) -> None:
         steam_id = profile.steam_id.strip()

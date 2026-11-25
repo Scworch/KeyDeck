@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "plugin-*-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Plugin release tag
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,14 +23,17 @@ jobs:
         with:
           python-version: "3.11"
       - name: Package plugin archive and checksum
-        run: python scripts\package_plugin_release.py $env:GITHUB_REF_NAME
+        run: python scripts\package_plugin_release.py $env:PLUGIN_TAG
         shell: pwsh
+        env:
+          PLUGIN_TAG: ${{ inputs.tag || github.ref_name }}
       - name: Publish plugin release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          PLUGIN_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:PLUGIN_TAG
           if ($tag -match '^plugin-(.+)-v(\d+(?:\.\d+){1,2})$') {
             $pluginId = $Matches[1]
             $version = $Matches[2]

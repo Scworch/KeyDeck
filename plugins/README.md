@@ -42,7 +42,8 @@ For example, `plugin-MultiTool-v0.2.0` packages only the tracked files from
 `SHA256SUMS.txt`. The workflow rejects tags whose ID/version do not match the
 catalog and manifest. User settings, caches, and log files are excluded.
 After committing the matching manifest and catalog version, create and push the
-tag to run the release workflow:
+tag to run the release workflow. The workflow can also be started manually with
+the exact tag as its `tag` input:
 
 ```powershell
 git tag plugin-MultiTool-v0.2.0

@@ -32,7 +32,7 @@ class _Notifier(QObject):
 
 
 class Plugin(PluginBase):
-    plugin_id = "gta_clear_session"
+    plugin_id = "GtaClearSession"
     plugin_name = "GTA Clear Session"
 
     def __init__(self, context: PluginContext | None = None) -> None:
@@ -57,6 +57,7 @@ class Plugin(PluginBase):
                 icon_mode="cover",
                 plugin_id=self.plugin_id,
                 settings_callback=self.open_settings,
+                aliases=["gta_clear_session.clear"],
             )
         ]
 

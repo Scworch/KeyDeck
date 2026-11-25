@@ -7,7 +7,7 @@ plugins/
   your_plugin/
     plugin.py or your_script.py
     manifest.json
-    settings.json   # or custom name from manifest
+    settings.json   # optional development default; not published in plugin archives
 ```
 
 Supported modes:
@@ -26,6 +26,42 @@ Manifest fields:
 - `args` optional list of script args; placeholders:
   - `{settings_file}`
   - `{plugin_dir}`
+
+## Independent plugin releases
+
+The KeyDeck executable includes only `catalog.json`; plugin code is published as
+an independent GitHub release. Update a plugin's `manifest.json` and matching
+entry in `catalog.json`, then publish a tag with this exact form:
+
+```text
+plugin-<plugin_id>-v<version>
+```
+
+For example, `plugin-MultiTool-v0.2.0` packages only the tracked files from
+`plugins/MultiTool/` and publishes `KeyDeckPlugin-MultiTool-0.2.0.zip` plus
+`SHA256SUMS.txt`. The workflow rejects tags whose ID/version do not match the
+catalog and manifest. User settings, caches, and log files are excluded.
+After committing the matching manifest and catalog version, create and push the
+tag to run the release workflow:
+
+```powershell
+git tag plugin-MultiTool-v0.2.0
+git push origin plugin-MultiTool-v0.2.0
+```
+Plugin releases are explicitly excluded from GitHub's "latest" Core release so
+the in-app updater continues to find KeyDeck releases.
+
+Catalog entries contain `id`, `name`, `version`, `description`,
+`min_keydeck_version`, and `permissions`. Plugin manifests must contain the same
+version and compatibility metadata. Optional `max_keydeck_version` can set an
+upper bound. Supported declared permissions are `filesystem`, `network`,
+`plugin_control`, `process`, `system_audio`, `system_input`, `system_network`,
+and `system_settings`.
+
+The permission list is disclosure and consent UI, not a sandbox: Python
+plugins run with the current user's operating-system permissions. Plugin data
+is stored under `%LOCALAPPDATA%\KeyDeck\plugins\<plugin_id>\`; installed code
+and rollback copies are stored separately.
 
 CFG integration:
 - In KeyDeck CFG window you can bind each slot to a specific action (`action_id`).

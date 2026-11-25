@@ -36,8 +36,10 @@ from keydeck import __version__
 from keydeck.config import BUTTON_SIZE_MAP, AppSettings, DeckPage
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo
+from keydeck.plugin_store import PluginStore
 from keydeck.ui.deck_button import SquircleButton
 from keydeck.ui.controls import ToggleSwitch, add_dialog_header, style_dialog_buttons
+from keydeck.ui.plugin_library_dialog import PluginLibraryDialog
 from keydeck.ui.theme import size_dialog
 
 MIME_SLOT_INDEX = "application/x-keydeck-slot-index"
@@ -591,6 +593,9 @@ class SettingsDialog(QDialog):
         parent: QWidget | None = None,
         refresh_actions_callback: Callable[[], list[Action]] | None = None,
         available_plugins: list[PluginInfo] | None = None,
+        plugin_store: PluginStore | None = None,
+        plugin_library_before_mutation: Callable[[], None] | None = None,
+        source_plugin_ids: set[str] | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("KeyDeck Settings")
@@ -601,6 +606,13 @@ class SettingsDialog(QDialog):
         self.plugin_errors = plugin_errors or []
         self.actions = actions
         self._disabled_plugins = set(settings.disabled_plugins)
+        self._preserved_plugin_ids = set(self._disabled_plugins)
+        for page in settings.pages:
+            for action_id in page.slot_actions:
+                if action_id and "." in action_id:
+                    plugin_id = action_id.split(".", 1)[0]
+                    if plugin_id != "core":
+                        self._preserved_plugin_ids.add(plugin_id)
         self.available_plugins = (
             list(available_plugins)
             if available_plugins is not None
@@ -609,6 +621,9 @@ class SettingsDialog(QDialog):
         self._plugins_by_id = {self._plugin_id(plugin): plugin for plugin in self.plugins}
         self._reload_plugins_callback = reload_plugins_callback
         self._refresh_actions_callback = refresh_actions_callback
+        self._plugin_store = plugin_store
+        self._plugin_library_before_mutation = plugin_library_before_mutation
+        self._source_plugin_ids = source_plugin_ids or set()
         self._action_by_id = {action.action_id: action for action in actions}
         self._pages = deepcopy(settings.pages) or [
             DeckPage(
@@ -1064,6 +1079,11 @@ class SettingsDialog(QDialog):
         self.reload_plugins_btn.clicked.connect(self._reload_plugins)
         self.reload_plugins_btn.setEnabled(self._reload_plugins_callback is not None)
         toolbar.addWidget(self.reload_plugins_btn)
+        self.plugin_library_btn = QPushButton("Plugin Library", page)
+        self.plugin_library_btn.setObjectName("PrimaryButton")
+        self.plugin_library_btn.setEnabled(self._plugin_store is not None)
+        self.plugin_library_btn.clicked.connect(self._open_plugin_library)
+        toolbar.addWidget(self.plugin_library_btn)
         layout.addLayout(toolbar)
 
         content = QHBoxLayout()
@@ -1139,6 +1159,23 @@ class SettingsDialog(QDialog):
         self._populate_plugin_list(plugins, errors, self.available_plugins)
 
         return page
+
+    def _open_plugin_library(self) -> None:
+        if self._plugin_store is None:
+            return
+        dialog = PluginLibraryDialog(
+            self._plugin_store,
+            self._source_plugin_ids,
+            before_mutation=self._before_plugin_library_mutation,
+            after_mutation=self._reload_plugins,
+            parent=self,
+        )
+        dialog.exec()
+
+    def _before_plugin_library_mutation(self) -> None:
+        self.release_plugin_references()
+        if self._plugin_library_before_mutation is not None:
+            self._plugin_library_before_mutation()
 
     def _plugin_id(self, plugin: PluginBase) -> str:
         return (
@@ -1951,7 +1988,7 @@ class SettingsDialog(QDialog):
         valid_action_ids = set(self._action_by_id)
         preserved_prefixes = tuple(
             f"{plugin_id}."
-            for plugin_id in self._disabled_plugins
+            for plugin_id in self._preserved_plugin_ids
         )
         aliases: dict[str, str] = {}
         for action in self.actions:

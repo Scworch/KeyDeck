@@ -20,6 +20,7 @@ from keydeck.config import (
     ICONS_DIR,
     INSTALLED_PLUGINS_DIR,
     PLUGINS_DIR,
+    PLUGIN_BACKUP_DIR,
     PLUGIN_DATA_DIR,
     AppSettings,
     load_settings,
@@ -27,6 +28,7 @@ from keydeck.config import (
 )
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo, PluginManager
+from keydeck.plugin_store import PluginStore
 from keydeck.updates import (
     Release,
     UpdateCancelled,
@@ -81,6 +83,11 @@ class KeyDeckApplication(QObject):
 
         self.settings: AppSettings = load_settings()
         self._action_invocation_stack: list[tuple[str, int]] = []
+        self.plugin_store = PluginStore(
+            INSTALLED_PLUGINS_DIR,
+            PLUGIN_BACKUP_DIR,
+            PLUGINS_DIR / "catalog.json",
+        )
         legacy_plugins_dir = (
             Path(sys.executable).resolve().parent / "plugins"
             if getattr(sys, "frozen", False)
@@ -124,6 +131,7 @@ class KeyDeckApplication(QObject):
         self._autostart_task_needs_retry = False
         self.tray_icon = self._create_tray()
         self.tray_icon.show()
+        QTimer.singleShot(5000, self._notify_missing_plugin_code)
         self.qt_app.aboutToQuit.connect(self._stop_update_worker)
         QTimer.singleShot(2500, self._check_updates_if_due)
         self._update_check_timer = QTimer(self)
@@ -195,6 +203,43 @@ class KeyDeckApplication(QObject):
 
         return tray
 
+    def _notify_missing_plugin_code(self) -> None:
+        installed_ids = {
+            plugin.plugin_id for plugin in self.plugin_manager.discover_plugins()
+        }
+        try:
+            catalog = self.plugin_store.bundled_catalog()
+        except (OSError, ValueError) as exc:
+            self.plugin_manager.errors.append(f"Plugin catalog unavailable: {exc}")
+            catalog = []
+        plugin_names = {entry.plugin_id: entry.name for entry in catalog}
+        action_prefixes = {
+            prefix: entry.plugin_id
+            for entry in catalog
+            for prefix in entry.action_prefixes
+        }
+        missing_plugins: dict[str, str] = {}
+        for page in self.settings.pages:
+            for action_id in page.slot_actions:
+                if not action_id or "." not in action_id:
+                    continue
+                prefix = action_id.split(".", 1)[0]
+                if prefix == "core":
+                    continue
+                plugin_id = action_prefixes.get(prefix, prefix)
+                if plugin_id not in installed_ids:
+                    missing_plugins[plugin_id] = plugin_names.get(plugin_id, plugin_id)
+        missing_names = sorted(missing_plugins.values())
+        if missing_names:
+            displayed_names = ", ".join(missing_names[:5])
+            if len(missing_names) > 5:
+                displayed_names += f", and {len(missing_names) - 5} more"
+            self.tray_icon.showMessage(
+                "Plugin installation required",
+                f"Install missing plugins ({displayed_names}) from Settings > Plugins > Plugin Library.",
+                QSystemTrayIcon.Warning,
+            )
+
     def _load_tray_icon(self) -> QIcon:
         custom_icon = ICONS_DIR / "tray.png"
         if custom_icon.exists():
@@ -261,6 +306,16 @@ class KeyDeckApplication(QObject):
                 parent=self.deck_window,
                 refresh_actions_callback=self._current_plugin_actions,
                 available_plugins=self.plugin_manager.discover_plugins(),
+                plugin_store=self.plugin_store,
+                plugin_library_before_mutation=self._suspend_plugins_for_library_change,
+                source_plugin_ids=(
+                    {
+                        plugin.plugin_id
+                        for plugin in self.plugin_manager.discover_plugins()
+                    }
+                    if not getattr(sys, "frozen", False)
+                    else set()
+                ),
             )
             dialog.actions_changed.connect(self._settings_actions_changed)
             dialog.update_check_requested.connect(self._check_updates_from_settings)
@@ -639,6 +694,10 @@ class KeyDeckApplication(QObject):
             self.plugin_manager.discover_plugins(),
         )
 
+    def _suspend_plugins_for_library_change(self) -> None:
+        self._clear_deck_plugin_references()
+        self.plugin_manager.unload_plugins()
+
     def _normalize_settings_actions(
         self,
         actions: list[Action],
@@ -650,11 +709,17 @@ class KeyDeckApplication(QObject):
         for action in actions:
             for alias in action.aliases:
                 aliases[str(alias)] = action.action_id
-        preserved_plugin_ids = (
+        preserved_plugin_ids = set(
             disabled_plugin_ids
             if disabled_plugin_ids is not None
-            else set(self.settings.disabled_plugins)
+            else self.settings.disabled_plugins
         )
+        for page in self.settings.pages:
+            for action_id in page.slot_actions:
+                if action_id and "." in action_id:
+                    plugin_id = action_id.split(".", 1)[0]
+                    if plugin_id != "core":
+                        preserved_plugin_ids.add(plugin_id)
         if self.settings.normalize_action_ids(
             valid_action_ids,
             aliases,

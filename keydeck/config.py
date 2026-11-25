@@ -31,6 +31,7 @@ CONFIG_DIR = APP_DATA_DIR / "config"
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
 PLUGIN_DATA_DIR = APP_DATA_DIR / "plugins"
 INSTALLED_PLUGINS_DIR = APP_DATA_DIR / "installed_plugins"
+PLUGIN_BACKUP_DIR = APP_DATA_DIR / "plugin_backups"
 
 
 BUTTON_SIZE_MAP = {

@@ -486,6 +486,18 @@ class SettingsDialogTests(unittest.TestCase):
         self.assertFalse(changed)
         self.assertEqual(settings.pages[0].slot_actions[0], "sample.run")
 
+    def test_unavailable_plugin_action_is_preserved_in_settings_dialog(self) -> None:
+        settings = AppSettings(
+            pages=[DeckPage(rows=1, columns=1, slot_actions=["LegacyPlugin.run"])]
+        )
+        dialog = SettingsDialog(settings, [])
+        try:
+            saved = dialog.to_settings()
+
+            self.assertEqual(saved.pages[0].slot_actions[0], "LegacyPlugin.run")
+        finally:
+            dialog.close()
+
 
 if __name__ == "__main__":
     unittest.main()

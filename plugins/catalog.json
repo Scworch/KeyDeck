@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "GtaClearSession",
+      "name": "GTA Clear Session",
+      "version": "0.1.0",
+      "description": "Clears the GTA session using the configured game action.",
+      "min_keydeck_version": "0.3.0",
+      "action_prefixes": ["gta_clear_session"],
+      "permissions": ["process", "filesystem"]
+    },
+    {
+      "id": "MultiTool",
+      "name": "MultiTool",
+      "version": "0.1.0",
+      "description": "Runs an ordered sequence of applications, URLs, commands, and assigned KeyDeck actions.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["process", "network", "filesystem", "plugin_control"]
+    },
+    {
+      "id": "NvidiaRtxVideoSuperResolution",
+      "name": "NVIDIA RTX Video Super Resolution",
+      "version": "0.1.0",
+      "description": "Controls NVIDIA RTX Video Super Resolution through the NVIDIA driver API.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["system_settings"]
+    },
+    {
+      "id": "ResolutionSwitcher",
+      "name": "Resolution Switcher",
+      "version": "0.1.0",
+      "description": "Switches the display to a monitor-supported resolution.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["system_settings"]
+    },
+    {
+      "id": "ShortcutLauncher",
+      "name": "Shortcut Launcher",
+      "version": "0.1.0",
+      "description": "Launches applications, Windows shortcuts, Run commands, and deep links.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["process", "network", "filesystem"]
+    },
+    {
+      "id": "SteamLauncher",
+      "name": "Steam Launcher",
+      "version": "0.1.0",
+      "description": "Launches Steam games and applications.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["process", "network", "filesystem"]
+    },
+    {
+      "id": "SteamSwitcher",
+      "name": "Steam Switcher",
+      "version": "0.1.0",
+      "description": "Switches Steam profiles and manages related local settings.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["network", "filesystem"]
+    },
+    {
+      "id": "WaveLink",
+      "name": "Wave Link",
+      "version": "1.0.0",
+      "description": "Controls Wave Link channels, volume, and supported hardware controls.",
+      "min_keydeck_version": "0.3.0",
+      "action_prefixes": ["wavelink_control"],
+      "permissions": ["network", "system_audio", "system_input", "filesystem"]
+    },
+    {
+      "id": "ZapretToggler",
+      "name": "Zapret Toggler",
+      "version": "0.1.0",
+      "description": "Controls the locally installed Zapret service and its network configuration.",
+      "min_keydeck_version": "0.3.0",
+      "permissions": ["process", "system_network"]
+    }
+  ]
+}

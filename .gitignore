@@ -36,6 +36,7 @@ logs/
 
 # Plugin local data (may contain personal/private info)
 installed_plugins/
+plugin_backups/
 plugins/*/settings.json
 plugins/*/*settings*.json
 plugins/*/cache/

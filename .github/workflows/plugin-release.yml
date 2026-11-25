@@ -1,0 +1,40 @@
+name: Build and publish plugin release
+
+on:
+  push:
+    tags:
+      - "plugin-*-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Package plugin archive and checksum
+        run: python scripts\package_plugin_release.py $env:GITHUB_REF_NAME
+        shell: pwsh
+      - name: Publish plugin release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -match '^plugin-(.+)-v(\d+(?:\.\d+){1,2})$') {
+            $pluginId = $Matches[1]
+            $version = $Matches[2]
+          } else {
+            throw "Invalid plugin release tag: $tag"
+          }
+          $asset = "dist\KeyDeckPlugin-$pluginId-$version.zip"
+          gh release create $tag `
+            $asset `
+            "dist\SHA256SUMS.txt" `
+            --title "KeyDeck plugin $tag" `
+            --latest=false `
+            --notes "Independent KeyDeck plugin release. Verify the archive using SHA256SUMS.txt."

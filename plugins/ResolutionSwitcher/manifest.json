@@ -2,6 +2,9 @@
   "id": "ResolutionSwitcher",
   "name": "Resolution Switcher",
   "version": "0.1.0",
+  "description": "Switches the display to a monitor-supported resolution.",
+  "min_keydeck_version": "0.3.0",
+  "permissions": ["system_settings"],
   "entry": "plugin.py",
   "settings": "settings.json"
 }

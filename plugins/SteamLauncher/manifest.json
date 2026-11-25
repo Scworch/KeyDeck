@@ -2,6 +2,9 @@
   "id": "SteamLauncher",
   "name": "Steam Launcher",
   "version": "0.1.0",
+  "description": "Launches Steam games and applications.",
+  "min_keydeck_version": "0.3.0",
+  "permissions": ["process", "network", "filesystem"],
   "entry": "plugin.py",
   "settings": "settings.json"
 }

@@ -2,6 +2,9 @@
   "id": "SteamSwitcher",
   "name": "Steam Switcher",
   "version": "0.1.0",
+  "description": "Switches Steam profiles and manages related local settings.",
+  "min_keydeck_version": "0.3.0",
+  "permissions": ["network", "filesystem"],
   "entry": "plugin.py",
   "settings": "steam_switch_settings.json"
 }

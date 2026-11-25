@@ -14,7 +14,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from keydeck import __version__
 from keydeck.plugin_api import Action, PluginBase, PluginContext
+from keydeck.plugin_store import version_key
 
 
 @dataclass(frozen=True)
@@ -75,7 +77,7 @@ class PluginManager:
 
         loaded_plugin_ids: set[str] = set()
         for plugins_dir in self.plugin_dirs:
-            if plugins_dir == self.plugins_dir:
+            if plugins_dir == self.plugins_dir and not getattr(sys, "frozen", False):
                 plugins_dir.mkdir(parents=True, exist_ok=True)
             if not plugins_dir.is_dir():
                 continue
@@ -94,6 +96,25 @@ class PluginManager:
                     loaded_plugin_ids.add(plugin_id)
                     if plugin_id in self.disabled_plugin_ids:
                         continue
+                    plugin_version = manifest.get("version")
+                    if plugin_version is not None:
+                        version_key(plugin_version)
+                    minimum_version = manifest.get("min_keydeck_version")
+                    if minimum_version is not None and version_key(minimum_version) > version_key(
+                        __version__
+                    ):
+                        raise ValueError(
+                            f"Requires KeyDeck {minimum_version} or newer "
+                            f"(installed: {__version__})"
+                        )
+                    maximum_version = manifest.get("max_keydeck_version")
+                    if maximum_version is not None and version_key(maximum_version) < version_key(
+                        __version__
+                    ):
+                        raise ValueError(
+                            f"Supports KeyDeck up to {maximum_version} "
+                            f"(installed: {__version__})"
+                        )
                     context = self._build_context(plugin_dir, manifest)
                     plugin = self._load_plugin_instance(context)
                     if plugin is not None:

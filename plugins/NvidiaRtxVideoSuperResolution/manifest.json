@@ -2,6 +2,9 @@
   "id": "NvidiaRtxVideoSuperResolution",
   "name": "NVIDIA RTX Video Super Resolution",
   "version": "0.1.0",
+  "description": "Controls NVIDIA RTX Video Super Resolution through the NVIDIA driver API.",
+  "min_keydeck_version": "0.3.0",
+  "permissions": ["system_settings"],
   "entry": "plugin.py",
   "settings": "settings.json"
 }

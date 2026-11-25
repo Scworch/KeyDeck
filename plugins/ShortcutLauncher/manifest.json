@@ -2,6 +2,9 @@
   "id": "ShortcutLauncher",
   "name": "Shortcut Launcher",
   "version": "0.1.0",
+  "description": "Launches applications, Windows shortcuts, Run commands, and deep links.",
+  "min_keydeck_version": "0.3.0",
+  "permissions": ["process", "network", "filesystem"],
   "entry": "plugin.py",
   "settings": "settings.json"
 }

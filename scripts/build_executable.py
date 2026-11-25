@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from importlib.util import find_spec
 from pathlib import Path
 import shutil
@@ -10,24 +11,28 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD_DIRS = {"keydeck", "plugins", "icons"}
-EXCLUDED_PLUGIN_DIRS = {"WQS"}
 ICON_FILE = ROOT / "assets" / "icon_candidates" / "exe" / "keydeck-exe-1.ico"
 
 
 def is_build_source_file(relative_path: Path) -> bool:
     parts = relative_path.parts
+    if parts and parts[0] == "plugins":
+        return relative_path == Path("plugins") / "catalog.json"
     return (
         bool(parts)
         and parts[0] in BUILD_DIRS
-        and not (
-            len(parts) > 1
-            and parts[0] == "plugins"
-            and parts[1] in EXCLUDED_PLUGIN_DIRS
-        )
     )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=ROOT / "dist",
+        help="Directory for the built executable (defaults to dist/)",
+    )
+    arguments = parser.parse_args(argv)
     if not ICON_FILE.is_file():
         raise FileNotFoundError(f"Application icon not found: {ICON_FILE}")
     pythonnet_spec = find_spec("pythonnet")
@@ -78,7 +83,7 @@ def main() -> int:
                 "--additional-hooks-dir",
                 str(pythonnet_hooks),
                 "--distpath",
-                str(ROOT / "dist"),
+                str(arguments.output_dir),
                 "--workpath",
                 str(temporary_root / "work"),
                 "--specpath",
@@ -104,7 +109,7 @@ def main() -> int:
                 "--collect-all",
                 "clr_loader",
                 "--add-data",
-                f"{source_root / 'plugins'};plugins",
+                f"{source_root / 'plugins' / 'catalog.json'};plugins",
                 "--add-data",
                 f"{source_root / 'icons'};icons",
                 str(source_root / "keydeck" / "__main__.py"),

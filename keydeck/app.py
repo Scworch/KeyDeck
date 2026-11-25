@@ -18,6 +18,7 @@ from keydeck import __version__
 from keydeck.admin import is_admin, restart_as_admin
 from keydeck.config import (
     ICONS_DIR,
+    INSTALLED_PLUGINS_DIR,
     PLUGINS_DIR,
     PLUGIN_DATA_DIR,
     AppSettings,
@@ -87,6 +88,7 @@ class KeyDeckApplication(QObject):
         )
         self.plugin_manager = PluginManager(
             PLUGINS_DIR,
+            additional_plugins_dirs=(INSTALLED_PLUGINS_DIR,),
             data_dir=PLUGIN_DATA_DIR,
             legacy_data_dir=legacy_plugins_dir,
             get_assigned_slots=self._assigned_plugin_slots,

@@ -12,6 +12,92 @@ from keydeck.plugin_manager import PluginInfo, PluginManager
 
 
 class PluginManagerTests(unittest.TestCase):
+    def test_installed_plugins_are_discovered_and_loaded_after_source_plugins(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_dir = root / "source_plugins"
+            installed_dir = root / "installed_plugins"
+            plugin_dir = installed_dir / "installed_sample"
+            plugin_dir.mkdir(parents=True)
+            (plugin_dir / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "id": "installed_sample",
+                        "name": "Installed sample",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (plugin_dir / "plugin.py").write_text(
+                """
+from keydeck.plugin_api import Action, PluginBase
+
+class Plugin(PluginBase):
+    def actions(self):
+        return [Action("installed_sample.run", "Run", lambda: None)]
+""",
+                encoding="utf-8",
+            )
+            manager = PluginManager(
+                source_dir,
+                data_dir=root / "plugin_data",
+                additional_plugins_dirs=(installed_dir,),
+            )
+
+            self.assertEqual(
+                manager.discover_plugins(),
+                [PluginInfo("installed_sample", "Installed sample")],
+            )
+
+            manager.load_plugins()
+            self.assertEqual(
+                [action.action_id for action in manager.all_actions()],
+                ["installed_sample.run"],
+            )
+            self.assertTrue(
+                (root / "plugin_data" / "installed_sample" / "settings.json").is_file()
+            )
+            manager.unload_plugins()
+
+    def test_source_plugin_takes_precedence_over_duplicate_installed_plugin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_dir = root / "source_plugins"
+            installed_dir = root / "installed_plugins"
+            for plugins_dir, title in (
+                (source_dir, "Source"),
+                (installed_dir, "Installed"),
+            ):
+                plugin_dir = plugins_dir / "sample"
+                plugin_dir.mkdir(parents=True)
+                (plugin_dir / "manifest.json").write_text(
+                    json.dumps({"id": "same_id", "name": title}),
+                    encoding="utf-8",
+                )
+                (plugin_dir / "plugin.py").write_text(
+                    f"""
+from keydeck.plugin_api import Action, PluginBase
+
+class Plugin(PluginBase):
+    def actions(self):
+        return [Action("same_id.run", {title!r}, lambda: None)]
+""",
+                    encoding="utf-8",
+                )
+            manager = PluginManager(
+                source_dir,
+                data_dir=root / "plugin_data",
+                additional_plugins_dirs=(installed_dir,),
+            )
+
+            self.assertEqual(
+                manager.discover_plugins(),
+                [PluginInfo("same_id", "Source")],
+            )
+            manager.load_plugins()
+            self.assertEqual(manager.all_actions()[0].title, "Source")
+            manager.unload_plugins()
+
     def test_action_can_disable_generic_json_settings_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             plugin_dir = Path(temp_dir) / "plugins" / "button_only"

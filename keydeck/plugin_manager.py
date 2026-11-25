@@ -31,8 +31,10 @@ class PluginManager:
         legacy_data_dir: Path | None = None,
         get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None,
         invoke_assigned_slot: Callable[[str, int], None] | None = None,
+        additional_plugins_dirs: tuple[Path, ...] = (),
     ) -> None:
         self.plugins_dir = plugins_dir
+        self.plugin_dirs = (plugins_dir, *additional_plugins_dirs)
         self.data_dir = data_dir or plugins_dir
         self.legacy_data_dir = legacy_data_dir
         self.plugins: list[PluginBase] = []
@@ -46,19 +48,24 @@ class PluginManager:
 
     def discover_plugins(self) -> list[PluginInfo]:
         discovered: list[PluginInfo] = []
-        if not self.plugins_dir.is_dir():
-            return discovered
-        for plugin_dir in sorted(self.plugins_dir.iterdir()):
-            manifest_path = plugin_dir / "manifest.json"
-            if not plugin_dir.is_dir() or not manifest_path.is_file():
+        discovered_ids: set[str] = set()
+        for plugins_dir in self.plugin_dirs:
+            if not plugins_dir.is_dir():
                 continue
-            try:
-                manifest = self._load_manifest(manifest_path)
-            except (OSError, TypeError, ValueError):
-                continue
-            plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
-            plugin_name = str(manifest.get("name", plugin_dir.name)).strip() or plugin_dir.name
-            discovered.append(PluginInfo(plugin_id, plugin_name))
+            for plugin_dir in sorted(plugins_dir.iterdir()):
+                manifest_path = plugin_dir / "manifest.json"
+                if not plugin_dir.is_dir() or not manifest_path.is_file():
+                    continue
+                try:
+                    manifest = self._load_manifest(manifest_path)
+                except (OSError, TypeError, ValueError):
+                    continue
+                plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
+                if plugin_id in discovered_ids:
+                    continue
+                plugin_name = str(manifest.get("name", plugin_dir.name)).strip() or plugin_dir.name
+                discovered.append(PluginInfo(plugin_id, plugin_name))
+                discovered_ids.add(plugin_id)
         return discovered
 
     def load_plugins(self, disabled_plugin_ids: set[str] | None = None) -> None:
@@ -66,29 +73,36 @@ class PluginManager:
         self.unload_plugins()
         self.disabled_plugin_ids = frozenset(disabled_plugin_ids or ())
 
-        self.plugins_dir.mkdir(parents=True, exist_ok=True)
-        for plugin_dir in sorted(self.plugins_dir.iterdir()):
-            if not plugin_dir.is_dir():
+        loaded_plugin_ids: set[str] = set()
+        for plugins_dir in self.plugin_dirs:
+            if plugins_dir == self.plugins_dir:
+                plugins_dir.mkdir(parents=True, exist_ok=True)
+            if not plugins_dir.is_dir():
                 continue
-            # The plugins directory may contain caches, user-created folders,
-            # or documentation. Only a manifest identifies a loadable plugin.
-            if not (plugin_dir / "manifest.json").is_file():
-                continue
-
-            try:
-                manifest = self._load_manifest(plugin_dir / "manifest.json")
-                plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
-                if plugin_id in self.disabled_plugin_ids:
+            for plugin_dir in sorted(plugins_dir.iterdir()):
+                if not plugin_dir.is_dir():
                     continue
-                context = self._build_context(plugin_dir, manifest)
-                plugin = self._load_plugin_instance(context)
-                if plugin is not None:
-                    self.plugins.append(plugin)
+                # Only a manifest identifies a loadable plugin.
+                if not (plugin_dir / "manifest.json").is_file():
                     continue
 
-                self.script_actions.append(self._build_script_action(context))
-            except Exception as exc:  # noqa: BLE001
-                self.errors.append(f"{plugin_dir.name}: {exc}")
+                try:
+                    manifest = self._load_manifest(plugin_dir / "manifest.json")
+                    plugin_id = str(manifest.get("id", plugin_dir.name)).strip() or plugin_dir.name
+                    if plugin_id in loaded_plugin_ids:
+                        continue
+                    loaded_plugin_ids.add(plugin_id)
+                    if plugin_id in self.disabled_plugin_ids:
+                        continue
+                    context = self._build_context(plugin_dir, manifest)
+                    plugin = self._load_plugin_instance(context)
+                    if plugin is not None:
+                        self.plugins.append(plugin)
+                        continue
+
+                    self.script_actions.append(self._build_script_action(context))
+                except Exception as exc:  # noqa: BLE001
+                    self.errors.append(f"{plugin_dir.name}: {exc}")
 
     def start_plugins(self) -> None:
         for plugin in self.plugins:
@@ -107,14 +121,12 @@ class PluginManager:
 
     def _unload_plugin_modules(self) -> None:
         module_names = tuple(self._plugin_module_names)
-        plugin_dirs = (
-            tuple(
-                path.resolve()
-                for path in self.plugins_dir.iterdir()
-                if path.is_dir() and (path / "manifest.json").is_file()
-            )
-            if self.plugins_dir.is_dir()
-            else ()
+        plugin_dirs = tuple(
+            path.resolve()
+            for plugins_dir in self.plugin_dirs
+            if plugins_dir.is_dir()
+            for path in plugins_dir.iterdir()
+            if path.is_dir() and (path / "manifest.json").is_file()
         )
         for name in tuple(sys.modules):
             module = sys.modules[name]
@@ -136,7 +148,7 @@ class PluginManager:
             ):
                 sys.modules.pop(name, None)
         self._plugin_module_names.clear()
-        plugins_root = self.plugins_dir.resolve()
+        plugins_roots = tuple(path.resolve() for path in self.plugin_dirs)
         initial_paths = set(self._initial_sys_path)
         for entry in tuple(sys.path):
             if entry in initial_paths:
@@ -145,7 +157,10 @@ class PluginManager:
                 resolved_entry = Path(entry or Path.cwd()).resolve()
             except (OSError, RuntimeError, ValueError):
                 continue
-            if resolved_entry == plugins_root or plugins_root in resolved_entry.parents:
+            if any(
+                resolved_entry == plugins_root or plugins_root in resolved_entry.parents
+                for plugins_root in plugins_roots
+            ):
                 while entry in sys.path:
                     sys.path.remove(entry)
         gc.collect()

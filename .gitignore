@@ -35,6 +35,7 @@ logs/
 *.ps1
 
 # Plugin local data (may contain personal/private info)
+installed_plugins/
 plugins/*/settings.json
 plugins/*/*settings*.json
 plugins/*/cache/

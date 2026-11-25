@@ -92,26 +92,6 @@ class DeckPage:
         return self
 
 
-def normalize_unique_plugin_assignments(pages: list[DeckPage]) -> bool:
-    seen_plugins: set[str] = set()
-    changed = False
-    for page in pages:
-        for slot, action_id in enumerate(page.slot_actions):
-            if not action_id or "." not in action_id:
-                continue
-            plugin_id = action_id.split(".", 1)[0]
-            if plugin_id == "core":
-                continue
-            if plugin_id in seen_plugins:
-                page.slot_actions[slot] = None
-                page.slot_settings.pop(str(slot), None)
-                page.slot_overrides.pop(str(slot), None)
-                changed = True
-                continue
-            seen_plugins.add(plugin_id)
-    return changed
-
-
 def _normalize_slot_overrides(raw: Any) -> dict[str, dict[str, Any]]:
     if not isinstance(raw, dict):
         return {}
@@ -289,7 +269,6 @@ class AppSettings:
                 )
             ]
         self.pages = [page.clamp() for page in self.pages]
-        normalize_unique_plugin_assignments(self.pages)
         page_ids: set[str] = set()
         for page in self.pages:
             if page.page_id in page_ids:
@@ -346,7 +325,6 @@ class AppSettings:
             if normalized != page.slot_actions:
                 page.slot_actions = normalized
         self.clamp()
-        changed = normalize_unique_plugin_assignments(self.pages) or changed
         return changed
 
     def resolve_hotkey_key(self, key: str) -> tuple[int, int] | None:

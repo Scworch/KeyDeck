@@ -225,7 +225,7 @@ class SettingsDialogTests(unittest.TestCase):
         finally:
             deck.close()
 
-    def test_plugin_assignment_is_unique_across_pages(self) -> None:
+    def test_plugin_can_be_assigned_repeatedly_with_independent_settings(self) -> None:
         settings = AppSettings.from_dict(
             {
                 "pages": [
@@ -249,10 +249,36 @@ class SettingsDialogTests(unittest.TestCase):
         )
 
         self.assertEqual(settings.pages[0].slot_actions[0], "SteamLauncher.launch")
-        self.assertIsNone(settings.pages[1].slot_actions[0])
+        self.assertEqual(settings.pages[1].slot_actions[0], "SteamLauncher.launch")
         self.assertEqual(settings.pages[0].slot_settings["0"]["profile"], "primary")
-        self.assertNotIn("0", settings.pages[1].slot_settings)
-        self.assertNotIn("0", settings.pages[1].slot_overrides)
+        self.assertEqual(settings.pages[1].slot_settings["0"]["profile"], "secondary")
+        self.assertEqual(settings.pages[1].slot_overrides["0"]["title"], "Duplicate")
+
+    def test_action_picker_offers_plugin_already_assigned_to_another_button(self) -> None:
+        action = Action(
+            action_id="SteamLauncher.launch",
+            title="Steam Launcher",
+            callback=lambda: None,
+            plugin_id="SteamLauncher",
+        )
+        dialog = SettingsDialog(
+            AppSettings(
+                pages=[
+                    DeckPage(
+                        rows=1,
+                        columns=2,
+                        slot_actions=["SteamLauncher.launch", None],
+                    )
+                ]
+            ),
+            [action],
+        )
+        try:
+            available = dialog._available_actions_for_slot(1)
+
+            self.assertEqual([item.action_id for item in available], ["SteamLauncher.launch"])
+        finally:
+            dialog.close()
 
     def test_legacy_discord_action_migrates_its_mode_into_button_settings(self) -> None:
         settings = AppSettings(

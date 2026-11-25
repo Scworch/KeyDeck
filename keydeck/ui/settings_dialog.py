@@ -39,7 +39,6 @@ from keydeck.config import (
     BUTTON_SIZE_MAP,
     AppSettings,
     DeckPage,
-    normalize_unique_plugin_assignments,
 )
 from keydeck.plugin_api import Action, PluginBase
 from keydeck.plugin_manager import PluginInfo
@@ -2291,23 +2290,8 @@ class SettingsDialog(QDialog):
                 else:
                     normalized.append(None)
             page.slot_actions = normalized
-        normalize_unique_plugin_assignments(self._pages)
-
-    def _available_actions_for_slot(self, slot: int) -> list[Action]:
-        used_plugins = {
-            action.plugin_id
-            for page in self._pages
-            for other_slot, action_id in enumerate(page.slot_actions)
-            if (page is not self._current_page or other_slot != slot)
-            and action_id
-            and (action := self._action_by_id.get(action_id)) is not None
-            and action.plugin_id != "core"
-        }
-        return [
-            action
-            for action in self.actions
-            if action.plugin_id == "core" or action.plugin_id not in used_plugins
-        ]
+    def _available_actions_for_slot(self, _slot: int) -> list[Action]:
+        return list(self.actions)
 
     def _project_root(self) -> Path:
         return Path(__file__).resolve().parents[2]

@@ -25,6 +25,7 @@ class Action:
     icon_offset_y: int = 0
     aliases: list[str] = field(default_factory=list)
     plugin_settings_enabled: bool = True
+    action_title_callback: Callable[[int, dict], str] | None = None
 
 
 @dataclass
@@ -38,6 +39,7 @@ class PluginContext:
     data_dir: Path | None = None
     get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None
     invoke_assigned_slot: Callable[[str, int], None] | None = None
+    refresh_actions: Callable[[], None] | None = None
 
     def __post_init__(self) -> None:
         if self.data_dir is None:

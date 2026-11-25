@@ -130,6 +130,38 @@ class Plugin(PluginBase):
             self.assertIsNone(action.settings_callback)
             manager.unload_plugins()
 
+    def test_plugin_context_exposes_action_refresh_callback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            plugin_dir = root / "plugins" / "refresh_sample"
+            plugin_dir.mkdir(parents=True)
+            (plugin_dir / "manifest.json").write_text(
+                json.dumps({"id": "refresh_sample"}),
+                encoding="utf-8",
+            )
+            (plugin_dir / "plugin.py").write_text(
+                """
+from keydeck.plugin_api import Action, PluginBase
+
+class Plugin(PluginBase):
+    def actions(self):
+        return [Action("refresh_sample.run", "Run", lambda: None)]
+""",
+                encoding="utf-8",
+            )
+            refreshes: list[bool] = []
+            manager = PluginManager(
+                root / "plugins",
+                data_dir=root / "data",
+                refresh_actions=lambda: refreshes.append(True),
+            )
+            manager.load_plugins()
+
+            manager.plugins[0].context.refresh_actions()
+
+            self.assertEqual(refreshes, [True])
+            manager.unload_plugins()
+
     def test_disabled_plugin_is_not_imported_and_releases_loaded_module(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

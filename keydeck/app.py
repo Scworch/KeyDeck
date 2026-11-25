@@ -71,8 +71,11 @@ class UpdateWorker(QThread):
 
 
 class KeyDeckApplication(QObject):
+    plugin_actions_refresh_requested = Signal()
+
     def __init__(self) -> None:
         super().__init__()
+        self.plugin_actions_refresh_requested.connect(self._refresh_plugin_actions)
         self.qt_app = QApplication.instance() or QApplication(sys.argv)
         self.qt_app.setApplicationName("KeyDeck")
         self.qt_app.setQuitOnLastWindowClosed(False)
@@ -101,6 +104,7 @@ class KeyDeckApplication(QObject):
             legacy_data_dir=legacy_plugins_dir,
             get_assigned_slots=self._assigned_plugin_slots,
             invoke_assigned_slot=self._invoke_assigned_plugin_slot,
+            refresh_actions=self.plugin_actions_refresh_requested.emit,
         )
         self.plugin_manager.load_plugins(set(self.settings.disabled_plugins))
         self.plugin_manager.start_plugins()
@@ -628,6 +632,16 @@ class KeyDeckApplication(QObject):
     def _settings_actions_changed(self, actions: list[Action]) -> None:
         self.deck_window.update_actions(actions)
         self.deck_window.apply_settings(self.settings)
+
+    def _refresh_plugin_actions(self) -> None:
+        if not hasattr(self, "deck_window"):
+            return
+        settings_dialog = getattr(self, "_settings_dialog", None)
+        if settings_dialog is not None and settings_dialog.isVisible():
+            settings_dialog._refresh_plugin_actions()
+            return
+        actions = self._current_plugin_actions()
+        self.deck_window.update_actions(actions)
 
     def _assigned_plugin_slots(self) -> list[dict]:
         actions_by_id = {

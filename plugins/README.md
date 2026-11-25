@@ -14,6 +14,8 @@ Supported modes:
 - Class plugin:
   - `entry` points to file with `Plugin` class (inherits `PluginBase`)
   - `actions()` returns list of `Action`
+  - Optional `action_title_callback(slot, settings)` provides dynamic button captions.
+  - `PluginContext.refresh_actions()` requests a UI refresh after external state changes.
 - Script plugin:
   - `entry` points to executable Python script
   - KeyDeck creates one action and runs this script on button click
@@ -75,3 +77,10 @@ Wave Link Control:
 - Configure the Wave Link channel, volume step, and the two increase/decrease hotkeys in the plugin settings.
 - Wheel calibration captures keyboard/media-key events only. The PRO X 2 volume wheel emits HID Consumer Control reports, which require a device filter driver to suppress before Windows changes its volume.
 - Configured hotkeys are intercepted globally while KeyDeck is running. Debug mode writes recognized volume-key events and Wave Link errors to `%LOCALAPPDATA%\KeyDeck\plugins\WaveLink\wavelink-debug.log` in release builds (or `plugins/WaveLink/wavelink-debug.log` from source); unrelated keystrokes are not recorded.
+
+Discord Connect:
+- Create your own Discord Application and enter its Application ID in the plugin. The Client Secret is optional; the desktop authorization flow uses PKCE.
+- Register `http://127.0.0.1` as an OAuth2 Redirect URI. Discord's local IPC connection does not require an RPC Origin.
+- Discord restricts RPC and voice scopes to approved applications. Test applications may need the authorizing user on the application's tester list. KeyDeck does not bypass Discord's restrictions.
+- OAuth credentials and tokens are encrypted with Windows DPAPI in the current user's profile. Guild and channel IDs are saved per button; voice channels are discovered using Discord RPC.
+- Discord currently allows only one RPC application to modify voice settings at a time and may restore voice settings when that controlling application disconnects.

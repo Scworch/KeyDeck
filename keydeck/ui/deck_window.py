@@ -304,6 +304,9 @@ class DeckWindow(QWidget):
             slot_settings = page.slot_settings.get(str(index), {})
             slot_overrides = page.slot_overrides.get(str(index), {})
 
+            if action and action.action_title_callback:
+                title = action.action_title_callback(index, slot_settings)
+
             if action and action.action_icon_callback:
                 dyn_icon = action.action_icon_callback(index, slot_settings)
                 if dyn_icon:

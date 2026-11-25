@@ -34,6 +34,7 @@ class PluginManager:
         get_assigned_slots: Callable[[], list[dict[str, Any]]] | None = None,
         invoke_assigned_slot: Callable[[str, int], None] | None = None,
         additional_plugins_dirs: tuple[Path, ...] = (),
+        refresh_actions: Callable[[], None] | None = None,
     ) -> None:
         self.plugins_dir = plugins_dir
         self.plugin_dirs = (plugins_dir, *additional_plugins_dirs)
@@ -47,6 +48,7 @@ class PluginManager:
         self._initial_sys_path = list(sys.path)
         self.get_assigned_slots = get_assigned_slots
         self.invoke_assigned_slot = invoke_assigned_slot
+        self.refresh_actions = refresh_actions
 
     def discover_plugins(self) -> list[PluginInfo]:
         discovered: list[PluginInfo] = []
@@ -282,6 +284,7 @@ class PluginManager:
             data_dir=plugin_data_dir,
             get_assigned_slots=self.get_assigned_slots,
             invoke_assigned_slot=self.invoke_assigned_slot,
+            refresh_actions=self.refresh_actions,
         )
 
     def _load_manifest(self, manifest_path: Path) -> dict:

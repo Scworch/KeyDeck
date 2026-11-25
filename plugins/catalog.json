@@ -2,6 +2,14 @@
   "schema_version": 1,
   "plugins": [
     {
+      "id": "DiscordConnect",
+      "name": "Discord Connect",
+      "version": "0.1.0",
+      "description": "Controls Discord Desktop voice channels, mute, and deafen through official local RPC.",
+      "min_keydeck_version": "0.3.2",
+      "permissions": ["network", "filesystem"]
+    },
+    {
       "id": "GtaClearSession",
       "name": "GTA Clear Session",
       "version": "0.1.0",
